@@ -19,7 +19,7 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
     try {
       await login(email, password);
       onLogin();
-    } catch (error) {
+    } catch (_error) {
       setError('Nieprawidłowy email lub hasło');
     }
   };
