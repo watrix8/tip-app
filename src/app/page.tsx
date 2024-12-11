@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import LoginButton from './components/LoginButton';
-import RegisterForm from './components/RegisterForm';
+import LoginButton from '@/app/components/LoginButton';
+import RegisterForm from '@/app/components/RegisterForm';
 import { useRouter } from 'next/navigation';
 import { mockUser } from '@/app/data/mockUser';
+import dynamic from 'next/dynamic';
+const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
+  ssr: false
+});
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
