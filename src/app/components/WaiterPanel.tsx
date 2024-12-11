@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { LogOut } from 'lucide-react';
 import { mockUser } from '@/app/data/mockUser';
+import Image from 'next/image';
 
 interface Tip {
   amount: number;
@@ -13,6 +14,24 @@ interface Tip {
 interface WaiterPanelProps {
   onLogout: () => void;
 }
+
+{!imageError ? (
+  <div className="relative w-12 h-12">
+    <Image
+      src={mockUser.avatarUrl}
+      alt={`Avatar ${mockUser.name}`}
+      fill
+      className="object-cover"
+      onError={() => setImageError(true)}
+    />
+  </div>
+) : (
+  <div className="w-full h-12 h-12 flex items-center justify-center bg-blue-100">
+    <span className="text-blue-600 text-xl font-bold">
+      {getInitials(mockUser.name)}
+    </span>
+  </div>
+)}
 
 export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
   const [tips, setTips] = useState<Tip[]>([]);
