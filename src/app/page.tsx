@@ -12,7 +12,8 @@ import {
   collection, 
   query, 
   where, 
-  getDocs
+  getDocs,
+  DocumentData
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
@@ -20,16 +21,18 @@ const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
   ssr: false
 });
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  restaurantId: string;
+  avatarUrl: string;
+}
+
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    name: string;
-    email: string;
-    restaurantId: string;
-    avatarUrl: string;
-  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export default function Home() {
           if (doc.exists()) {
             setCurrentUser({
               id: doc.id,
-              ...doc.data() as any
+              ...doc.data() as User
             });
             setIsLoggedIn(true);
           } else {
@@ -65,7 +68,7 @@ export default function Home() {
     if (!querySnapshot.empty) {
       const userData = {
         id: querySnapshot.docs[0].id,
-        ...querySnapshot.docs[0].data() as any
+        ...querySnapshot.docs[0].data() as User
       };
       setCurrentUser(userData);
       setIsLoggedIn(true);
