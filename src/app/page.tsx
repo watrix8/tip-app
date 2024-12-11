@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import LoginButton from '@/app/components/LoginButton';
 import RegisterForm from '@/app/components/RegisterForm';
 import { useRouter } from 'next/navigation';
-import { mockUser } from '@/app/data/mockUser';
 import { 
   getFirestore, 
   doc, 
@@ -35,29 +34,25 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (mockUser.id) {
-      setIsLoggedIn(true);
-      setCurrentUser(mockUser);
+    const userId = localStorage.getItem('userId'); // Sprawdzamy, czy użytkownik jest zapisany w localStorage
+    if (userId) {
+      // Pobieramy dane użytkownika z Firestore
+      getDoc(doc(getFirestore(), 'Users', userId)).then((docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data() as User;
+          setCurrentUser({
+            ...userData,
+            id: docSnap.id
+          });
+          setIsLoggedIn(true); // Użytkownik zalogowany
+        } else {
+          setIsLoggedIn(false); // Jeśli użytkownik nie istnieje w bazie
+          setCurrentUser(null);
+        }
+      });
     } else {
-      const userId = localStorage.getItem('userId');
-      if (userId) {
-        getDoc(doc(getFirestore(), 'Users', userId)).then((doc) => {
-          if (doc.exists()) {
-            const userData = doc.data() as User;
-            setCurrentUser({
-              ...userData,
-              id: doc.id
-            });
-            setIsLoggedIn(true);
-          } else {
-            setIsLoggedIn(false);
-            setCurrentUser(null);
-          }
-        });
-      } else {
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-      }
+      setIsLoggedIn(false); // Brak danych użytkownika w localStorage
+      setCurrentUser(null);
     }
   }, []);
 
