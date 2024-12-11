@@ -14,7 +14,6 @@ import {
   where, 
   getDocs
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
 import dynamic from 'next/dynamic';
 
 const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
@@ -45,7 +44,7 @@ export default function Home() {
           if (doc.exists()) {
             setCurrentUser({
               id: doc.id,
-              ...(doc.data() as any)
+              ...doc.data() as any
             });
             setIsLoggedIn(true);
           } else {
@@ -66,7 +65,7 @@ export default function Home() {
     if (!querySnapshot.empty) {
       const userData = {
         id: querySnapshot.docs[0].id,
-        ...(querySnapshot.docs[0].data() as any)
+        ...querySnapshot.docs[0].data() as any
       };
       setCurrentUser(userData);
       setIsLoggedIn(true);
