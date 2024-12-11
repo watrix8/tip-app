@@ -12,8 +12,7 @@ import {
   collection, 
   query, 
   where, 
-  getDocs,
-  DocumentData
+  getDocs
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
