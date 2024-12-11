@@ -32,13 +32,6 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [newUserData, setNewUserData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    restaurantId: '',
-    avatarUrl: ''
-  }); // Stan do przechowywania danych użytkownika do dodania
   const router = useRouter();
 
   useEffect(() => {
@@ -102,11 +95,6 @@ export default function Home() {
     setCurrentUser(null);
     localStorage.removeItem('userId');
     router.push('/');
-  };
-
-  // Funkcja do obsługi dodania nowego użytkownika
-  const handleAddUser = async () => {
-    const { name, email, password, restaurantId, avatarUrl } = newUserData;
   };
 
   return (
