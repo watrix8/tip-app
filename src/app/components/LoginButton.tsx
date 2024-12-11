@@ -13,13 +13,13 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
-
+ 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
       onLogin();
-    } catch (_error) {
+    } catch {
       setError('Nieprawidłowy email lub hasło');
     }
   };
