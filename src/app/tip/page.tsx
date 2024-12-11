@@ -16,6 +16,7 @@ export default function TipPage() {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
+  const [loading, setLoading] = useState(true); // Stan ładowania
   const searchParams = useSearchParams();  // Używamy useSearchParams do dostępu do query
 
   // Przykładowe kwoty napiwków
@@ -24,13 +25,22 @@ export default function TipPage() {
   useEffect(() => {
     const waiterId = searchParams.get('waiterId');
     if (waiterId) {
-      // W prawdziwej aplikacji dane kelnera powinny pochodzić z API lub URL
-      const waiterData: Waiter = {
-        name: "Jan Kowalski", // Zmienimy to, by pochodziło z dynamicznych danych
-        id: waiterId,  // Korzystamy z query parametru
-        avatarUrl: "https://nieistniejacy.url/zdjecie.jpg", // Zmienimy to na dynamiczny URL
-      };
-      setWaiter(waiterData);
+      // Przykład pobierania danych kelnera z API na podstawie waiterId
+      fetch(`/api/waiter/${waiterId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const waiterData: Waiter = {
+            name: data.name,  // Zakładając, że API zwróci dane o kelnerze
+            id: waiterId,
+            avatarUrl: data.avatarUrl,  // API powinno zwrócić odpowiedni URL
+          };
+          setWaiter(waiterData);
+          setLoading(false); // Ustawiamy stan ładowania na false po otrzymaniu danych
+        })
+        .catch(() => {
+          alert('Nie udało się pobrać danych kelnera.');
+          setLoading(false); // Ustawiamy stan ładowania na false, nawet jeśli wystąpił błąd
+        });
     }
   }, [searchParams]);  // Oczekujemy, że query się zmieni
 
@@ -51,8 +61,12 @@ export default function TipPage() {
     alert(`Przekierowanie do płatności: ${finalAmount} PLN`);
   };
 
-  if (!waiter) {
+  if (loading) {
     return <div>Ładowanie...</div>; // Pokazujemy komunikat, dopóki dane kelnera się ładują
+  }
+
+  if (!waiter) {
+    return <div>Nie znaleziono kelnera o podanym ID.</div>;
   }
 
   return (
