@@ -44,10 +44,10 @@ export default function Home() {
       if (userId) {
         getDoc(doc(getFirestore(), 'Users', userId)).then((doc) => {
           if (doc.exists()) {
-            const { id, ...userData } = doc.data() as User; // Wykluczenie id z danych
+            const userData = doc.data() as User; // Pobranie danych
             setCurrentUser({
               ...userData,
-              id: doc.id // Ręczne przypisanie id
+              id: doc.id // Dodanie id ręcznie
             });
             setIsLoggedIn(true);
           } else {
