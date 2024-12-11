@@ -13,6 +13,13 @@ interface Tip {
 
 interface WaiterPanelProps {
   onLogout: () => void;
+  currentUser: {
+    id: string;
+    name: string;
+    email: string;
+    restaurantId: string;
+    avatarUrl: string;
+  } | null;
 }
 
 export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
