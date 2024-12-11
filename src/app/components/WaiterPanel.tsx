@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { LogOut } from 'lucide-react';
-import { mockUser } from '@/app/data/mockUser';
 import Image from 'next/image';
+import { mockUser } from '@/app/data/mockUser';
 
 interface Tip {
   amount: number;
@@ -15,30 +15,11 @@ interface WaiterPanelProps {
   onLogout: () => void;
 }
 
-{!imageError ? (
-  <div className="relative w-12 h-12">
-    <Image
-      src={mockUser.avatarUrl}
-      alt={`Avatar ${mockUser.name}`}
-      fill
-      className="object-cover"
-      onError={() => setImageError(true)}
-    />
-  </div>
-) : (
-  <div className="w-full h-12 h-12 flex items-center justify-center bg-blue-100">
-    <span className="text-blue-600 text-xl font-bold">
-      {getInitials(mockUser.name)}
-    </span>
-  </div>
-)}
-
 export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [totalTips, setTotalTips] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  // Zaktualizowany URL na właściwą domenę
   const waiterQrData = `https://tip-app-bay.vercel.app/tip?waiterId=${mockUser.id}&name=${encodeURIComponent(mockUser.name)}`;
 
   useEffect(() => {
@@ -52,7 +33,6 @@ export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
     setTotalTips(mockTips.reduce((acc, tip) => acc + tip.amount, 0));
   }, []);
 
-  // Funkcja tworząca inicjały
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -71,17 +51,18 @@ export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
       <div className="bg-gray-50 p-6 rounded-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
               {!imageError ? (
-                <img
+                <Image
                   src={mockUser.avatarUrl}
                   alt={`Avatar ${mockUser.name}`}
-                  className="object-cover w-full h-full"
+                  fill
+                  className="object-cover"
                   onError={() => setImageError(true)}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-blue-100">
-                  <span className="text-blue-600 text-2xl font-bold">
+                  <span className="text-blue-600 text-xl font-bold">
                     {getInitials(mockUser.name)}
                   </span>
                 </div>

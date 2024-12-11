@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import LoginButton from './components/LoginButton';
-import WaiterPanel from './components/WaiterPanel';
 import RegisterForm from './components/RegisterForm';
 import { useRouter } from 'next/navigation';
 import { mockUser } from '@/app/data/mockUser';
