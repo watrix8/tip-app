@@ -67,7 +67,50 @@ export default function TipPage() {
           <p className="text-gray-500 mt-2">ID: {waiter.id}</p>
         </div>
 
-        {/* reszta kodu pozostaje bez zmian */}
+        {/* Preset kwot */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {tipAmounts.map((amount) => (
+            <button
+              key={amount}
+              onClick={() => {
+                setSelectedAmount(amount);
+                setCustomAmount('');
+              }}
+              className={`p-4 rounded-lg text-center ${
+                selectedAmount === amount 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              <div className="font-bold">{amount} PLN</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Własna kwota */}
+        <div className="mb-6">
+          <input
+            type="number"
+            placeholder="Wpisz własną kwotę"
+            value={customAmount}
+            onChange={(e) => {
+              setCustomAmount(e.target.value);
+              setSelectedAmount(null);
+            }}
+            className="w-full p-3 border rounded-lg"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        {/* Przycisk zapłaty */}
+        <button
+          onClick={handlePayment}
+          className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+        >
+          <CreditCard className="w-5 h-5 mr-2" />
+          Zapłać {(selectedAmount || Number(customAmount) || 0).toFixed(2)} PLN
+        </button>
       </div>
     </main>
   );
