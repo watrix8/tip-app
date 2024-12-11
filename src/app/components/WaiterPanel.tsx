@@ -48,6 +48,14 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       .toUpperCase();
   };
 
+  // Funkcja formatowania czasu bez sekund
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto px-2 py-6 sm:px-4 sm:py-8">
       {/* Przycisk wylogowania */}
@@ -104,7 +112,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
           {tips.map((tip, index) => (
             <li key={index} className="flex justify-between items-center">
               <span className="text-gray-500">{tip.amount.toFixed(2)} PLN</span>
-              <span className="text-gray-500">{tip.timestamp.toLocaleString()}</span>
+              <span className="text-gray-500">{formatTime(new Date(tip.timestamp))}</span>
               <span className={`text-sm font-semibold ${tip.status === 'otrzymany' ? 'text-green-500' : tip.status === 'rozliczony' ? 'text-blue-500' : 'text-gray-500'}`}>
                 {tip.status}
               </span>

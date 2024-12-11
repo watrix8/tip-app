@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router'; // Dodajemy router do pobrania waiterId z URL
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
 
@@ -11,6 +12,8 @@ interface Waiter {
 }
 
 export default function TipPage() {
+  const router = useRouter();
+  const { query } = router;
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [imageError, setImageError] = useState(false);
@@ -20,21 +23,22 @@ export default function TipPage() {
   const tipAmounts = [5, 10, 20];
 
   useEffect(() => {
-    // W prawdziwej aplikacji te dane powinny pochodzić z API lub URL
+    if (!query.waiterId) return; // Jeśli waiterId nie ma w URL, nic nie rób
+
     const fetchWaiterData = async () => {
-      // Zakładając, że dane kelnera są dostępne w URL lub API
-      const waiterData: Waiter = {
-        name: "Jan Kowalski", // Zmienimy to, by pochodziło z dynamicznych danych
-        id: "W123", // Jak wyżej
-        avatarUrl: "https://nieistniejacy.url/zdjecie.jpg", // Zmienimy to na dynamiczny URL
-      };
+      // Załóżmy, że masz funkcję do pobierania danych kelnera z bazy na podstawie waiterId
+      const waiterId = query.waiterId as string;
+      
+      // Pobieramy dane kelnera z Firestore lub innej bazy
+      const response = await fetch(`/api/waiters/${waiterId}`); // Przykładowe API, dostosuj do własnych potrzeb
+      const waiterData: Waiter = await response.json(); // Zakładamy, że API zwraca dane kelnera w formacie JSON
+
       setWaiter(waiterData);
     };
 
     fetchWaiterData();
-  }, []);
+  }, [query.waiterId]);
 
-  // Funkcja tworząca inicjały
   const getInitials = (name: string) => {
     return name
       .split(' ')
