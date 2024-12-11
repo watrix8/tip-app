@@ -5,7 +5,18 @@ import LoginButton from '@/app/components/LoginButton';
 import RegisterForm from '@/app/components/RegisterForm';
 import { useRouter } from 'next/navigation';
 import { mockUser } from '@/app/data/mockUser';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs
+} from 'firebase/firestore';
+import { db } from '@/config/firebase';
 import dynamic from 'next/dynamic';
+
 const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
   ssr: false
 });
@@ -13,23 +24,63 @@ const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    restaurantId: string;
+    avatarUrl: string;
+  } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Sprawdzamy czy użytkownik jest zalogowany
-    // W prawdziwej aplikacji, byśmy to sprawdzali na podstawie tokena lub sesji
-    setIsLoggedIn(!!mockUser.id);
+    // Sprawdzamy stan logowania użytkownika
+    if (mockUser.id) {
+      setIsLoggedIn(true);
+      setCurrentUser(mockUser);
+    } else {
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        getDoc(doc(getFirestore(), 'Users', userId)).then((doc) => {
+          if (doc.exists()) {
+            setCurrentUser({
+              id: doc.id,
+              ...(doc.data() as any)
+            });
+            setIsLoggedIn(true);
+          } else {
+            setIsLoggedIn(false);
+            setCurrentUser(null);
+          }
+        });
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+      }
+    }
   }, []);
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    // Przekierowujemy użytkownika na stronę główną, na której znajduje się panel kelnera
-    router.push('/');
+  const handleLogin = async (email: string, password: string) => {
+    const q = query(collection(getFirestore(), 'Users'), where('email', '==', email), where('password', '==', password));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const userData = {
+        id: querySnapshot.docs[0].id,
+        ...(querySnapshot.docs[0].data() as any)
+      };
+      setCurrentUser(userData);
+      setIsLoggedIn(true);
+      localStorage.setItem('userId', userData.id);
+      router.push('/');
+    } else {
+      alert('Nieprawidłowy email lub hasło');
+    }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    // Przekierowujemy użytkownika na stronę główną
+    setCurrentUser(null);
+    localStorage.removeItem('userId');
     router.push('/');
   };
 
@@ -37,7 +88,7 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         {isLoggedIn ? (
-          <WaiterPanel onLogout={handleLogout} />
+          <WaiterPanel onLogout={handleLogout} currentUser={currentUser} />
         ) : showRegister ? (
           <RegisterForm onBackToLogin={() => setShowRegister(false)} />
         ) : (
