@@ -4,7 +4,14 @@ import { getApp } from 'firebase/app';
 // Funkcja do dodawania użytkownika
 const db = getFirestore(getApp());
 
-export const addUser = async (name, email, password, restaurantId, avatarUrl) => {
+// Określenie typów dla parametrów
+export const addUser = async (
+  name: string,
+  email: string,
+  password: string,
+  restaurantId: string,
+  avatarUrl: string
+): Promise<void> => {
   try {
     const docRef = await addDoc(collection(db, 'Users'), {
       name,
