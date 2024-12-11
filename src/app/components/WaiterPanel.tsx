@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { LogOut } from 'lucide-react';
 import Image from 'next/image';
-import { mockUser } from '@/app/data/mockUser';
 
 interface Tip {
   amount: number;
@@ -22,12 +21,15 @@ interface WaiterPanelProps {
   } | null;
 }
 
-export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
+export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [totalTips, setTotalTips] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  const waiterQrData = `https://tip-app-bay.vercel.app/tip?waiterId=${mockUser.id}&name=${encodeURIComponent(mockUser.name)}`;
+  // Generowanie URL QR kodu z użyciem danych użytkownika z bazy
+  const waiterQrData = currentUser
+    ? `https://tip-app-bay.vercel.app/tip?waiterId=${currentUser.id}&name=${encodeURIComponent(currentUser.name)}`
+    : '';
 
   useEffect(() => {
     // W prawdziwej aplikacji, pobieralibyśmy dane o napiwkach z serwera
@@ -51,8 +53,8 @@ export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Witaj, {mockUser.name}!</h2>
-        <p className="text-sm text-gray-500">ID: {mockUser.id}</p>
+        <h2 className="text-2xl font-bold text-gray-900">Witaj, {currentUser?.name}!</h2>
+        <p className="text-sm text-gray-500">ID: {currentUser?.id}</p>
       </div>
 
       <div className="bg-gray-50 p-6 rounded-lg">
@@ -61,8 +63,8 @@ export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
             <div className="relative w-12 h-12 rounded-full overflow-hidden mr-4">
               {!imageError ? (
                 <Image
-                  src={mockUser.avatarUrl}
-                  alt={`Avatar ${mockUser.name}`}
+                  src={currentUser?.avatarUrl || ''}
+                  alt={`Avatar ${currentUser?.name}`}
                   fill
                   className="object-cover"
                   onError={() => setImageError(true)}
@@ -70,14 +72,14 @@ export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-blue-100">
                   <span className="text-blue-600 text-xl font-bold">
-                    {getInitials(mockUser.name)}
+                    {getInitials(currentUser?.name || '')}
                   </span>
                 </div>
               )}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{mockUser.name}</h3>
-              <p className="text-sm text-gray-500">ID: {mockUser.id}</p>
+              <h3 className="font-semibold text-gray-900">{currentUser?.name}</h3>
+              <p className="text-sm text-gray-500">ID: {currentUser?.id}</p>
             </div>
           </div>
           <div className="text-right">
