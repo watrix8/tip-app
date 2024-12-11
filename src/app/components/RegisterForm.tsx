@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirebaseError } from 'firebase/app';
+import { addUser } from '@/app/data/firebaseTest'; // Zaimportuj funkcję addUser
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -13,7 +14,10 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    name: '',
+    restaurantId: '',
+    avatarUrl: ''
   });
   const [error, setError] = useState('');
   const { register } = useAuth();
@@ -30,6 +34,16 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
       console.log("Próba rejestracji:", formData.email);
       await register(formData.email, formData.password);
       console.log("Rejestracja udana");
+      
+      // Dodajemy użytkownika do bazy danych
+      await addUser(
+        formData.name,
+        formData.email,
+        formData.password,  // Pamiętaj, że w prawdziwej aplikacji hasło nie powinno być przechowywane w bazie w czystej postaci!
+        formData.restaurantId,
+        formData.avatarUrl
+      );
+      
       alert('Rejestracja udana! Możesz się teraz zalogować.');
       onBackToLogin();
     } catch (error: FirebaseError | unknown) {
@@ -50,6 +64,14 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        type="text"
+        placeholder="Imię"
+        value={formData.name}
+        onChange={(e) => setFormData({...formData, name: e.target.value})}
+        className="w-full p-2 border rounded-lg"
+        required
+      />
       <input
         type="email"
         placeholder="Email"
@@ -73,6 +95,20 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
         className="w-full p-2 border rounded-lg"
         required
+      />
+      <input
+        type="text"
+        placeholder="Id restauracji"
+        value={formData.restaurantId}
+        onChange={(e) => setFormData({...formData, restaurantId: e.target.value})}
+        className="w-full p-2 border rounded-lg"
+      />
+      <input
+        type="text"
+        placeholder="URL awatara"
+        value={formData.avatarUrl}
+        onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
+        className="w-full p-2 border rounded-lg"
       />
       {error && (
         <p className="text-red-500 text-sm text-center">{error}</p>
