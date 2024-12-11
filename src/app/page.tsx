@@ -63,13 +63,26 @@ export default function Home() {
   }, []);
 
   const handleLogin = async (email: string, password: string) => {
-    const q = query(collection(getFirestore(), 'Users'), where('email', '==', email), where('password', '==', password));
+    const q = query(
+      collection(getFirestore(), 'Users'),
+      where('email', '==', email),
+      where('password', '==', password)
+    );
+  
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-      const userData = {
-        id: querySnapshot.docs[0].id,
-        ...querySnapshot.docs[0].data() as User
+      const docSnapshot = querySnapshot.docs[0];
+      const data = docSnapshot.data();
+  
+      // Przypisanie wszystkich wymaganych właściwości zgodnie z interfejsem User
+      const userData: User = {
+        id: docSnapshot.id,
+        name: data.name || '', // domyślna wartość, jeśli brakuje pola
+        email: data.email || '',
+        restaurantId: data.restaurantId || '',
+        avatarUrl: data.avatarUrl || ''
       };
+  
       setCurrentUser(userData);
       setIsLoggedIn(true);
       localStorage.setItem('userId', userData.id);
@@ -78,6 +91,7 @@ export default function Home() {
       alert('Nieprawidłowy email lub hasło');
     }
   };
+  
  
   const handleLogout = () => {
     setIsLoggedIn(false);
