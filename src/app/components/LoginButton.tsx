@@ -2,39 +2,26 @@
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { FirebaseError } from 'firebase/app';
 
 interface LoginButtonProps {
-  onLogin: () => void;
+  onLogin: (email: string, password: string) => Promise<void>;
 }
 
 export default function LoginButton({ onLogin }: LoginButtonProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
- 
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(''); // Resetujemy wcześniejszy błąd
     try {
-      console.log("Próba logowania z:", email);
-      await login(email, password);
-      console.log("Logowanie udane");
-      onLogin();
-    } catch (error: FirebaseError | unknown) {
-      console.error("Szczegóły błędu:", error);
-      if (error instanceof FirebaseError) {
-        if (error.code === 'auth/user-not-found') {
-          setError('Nie znaleziono użytkownika o podanym adresie email');
-        } else if (error.code === 'auth/wrong-password') {
-          setError('Nieprawidłowe hasło');
-        } else {
-          setError('Błąd logowania: ' + error.message);
-        }
-      } else {
-        setError('Wystąpił nieoczekiwany błąd');
-      }
+      console.log('Próba logowania z:', email);
+      await onLogin(email, password); // Wywołujemy funkcję z propsów
+      console.log('Logowanie udane');
+    } catch (err) {
+      console.error('Błąd logowania:', err);
+      setError('Nieprawidłowy email lub hasło');
     }
   };
 
