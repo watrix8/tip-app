@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { FirebaseError } from 'firebase/app';
-import { addUser } from '@/app/data/firebaseTest'; // Zaimportuj funkcję addUser
+import { addUser } from '@/app/utils/firebaseUtils';  // Importujemy nową funkcję addUser
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -20,7 +19,6 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     avatarUrl: ''
   });
   const [error, setError] = useState('');
-  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +29,15 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     }
   
     try {
+      // Próba rejestracji użytkownika
       console.log("Próba rejestracji:", formData.email);
-      await register(formData.email, formData.password);
-      console.log("Rejestracja udana");
+      // Tu powinieneś dodać logikę do rejestracji, jeśli nie masz jej w innej funkcji.
       
       // Dodajemy użytkownika do bazy danych
       await addUser(
         formData.name,
         formData.email,
-        formData.password,  // Pamiętaj, że w prawdziwej aplikacji hasło nie powinno być przechowywane w bazie w czystej postaci!
+        formData.password,  // Pamiętaj, by nie przechowywać hasła w czystej postaci w prawdziwej aplikacji!
         formData.restaurantId,
         formData.avatarUrl
       );

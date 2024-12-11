@@ -15,7 +15,6 @@ import {
   getDocs
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
-import { addUser } from '@/app/data/firebaseTest'; // Importuj funkcję dodawania użytkownika
 
 const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
   ssr: false
@@ -108,7 +107,6 @@ export default function Home() {
   // Funkcja do obsługi dodania nowego użytkownika
   const handleAddUser = async () => {
     const { name, email, password, restaurantId, avatarUrl } = newUserData;
-    await addUser(name, email, password, restaurantId, avatarUrl); // Wywołanie funkcji zapisu
   };
 
   return (
@@ -132,50 +130,6 @@ export default function Home() {
               >
                 Zarejestruj się
               </button>
-              <div className="mt-4">
-                <h2 className="text-xl font-semibold">Dodaj nowego użytkownika</h2>
-                <input
-                  type="text"
-                  placeholder="Imię"
-                  value={newUserData.name}
-                  onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={newUserData.email}
-                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                />
-                <input
-                  type="password"
-                  placeholder="Hasło"
-                  value={newUserData.password}
-                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="Id restauracji"
-                  value={newUserData.restaurantId}
-                  onChange={(e) => setNewUserData({ ...newUserData, restaurantId: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="URL awatara"
-                  value={newUserData.avatarUrl}
-                  onChange={(e) => setNewUserData({ ...newUserData, avatarUrl: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                />
-                <button
-                  onClick={handleAddUser}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg mt-4"
-                >
-                  Dodaj użytkownika
-                </button>
-              </div>
             </div>
           </>
         )}

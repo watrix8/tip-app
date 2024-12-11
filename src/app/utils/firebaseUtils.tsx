@@ -4,19 +4,12 @@ import { getApp } from 'firebase/app';
 // Funkcja do dodawania użytkownika
 const db = getFirestore(getApp());
 
-// Określenie typów dla parametrów
-export const addUser = async (
-  name: string,
-  email: string,
-  password: string,
-  restaurantId: string,
-  avatarUrl: string
-): Promise<void> => {
+export const addUser = async (name: string, email: string, password: string, restaurantId: string, avatarUrl: string) => {
   try {
     const docRef = await addDoc(collection(db, 'Users'), {
       name,
       email,
-      password,  // Hasło w bazie danych nie powinno być przechowywane w czystej postaci, w prawdziwej aplikacji powinno być zaszyfrowane
+      password,  // W prawdziwej aplikacji hasło nie powinno być przechowywane w czystej postaci!
       restaurantId,
       avatarUrl
     });
