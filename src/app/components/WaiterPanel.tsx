@@ -7,9 +7,10 @@ import { mockUser } from '@/app/data/mockUser';
 interface WaiterPanelProps {
   onLogout: () => void;
 }
-
+ 
 export default function WaiterPanel({ onLogout }: WaiterPanelProps) {
-  const waiterQrData = `http://192.168.1.49:3000/tip?waiterId=${mockUser.id}&name=${encodeURIComponent(mockUser.name)}`;
+  // Zaktualizowany URL na właściwą domenę
+  const waiterQrData = `https://tip-app-bay.vercel.app/tip?waiterId=${mockUser.id}&name=${encodeURIComponent(mockUser.name)}`;
 
   return (
     <div className="space-y-6">
