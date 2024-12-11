@@ -44,10 +44,10 @@ export default function Home() {
       if (userId) {
         getDoc(doc(getFirestore(), 'Users', userId)).then((doc) => {
           if (doc.exists()) {
-            const userData = doc.data() as User; // Pobranie danych
+            const userData = doc.data() as User;
             setCurrentUser({
               ...userData,
-              id: doc.id // Dodanie id ręcznie
+              id: doc.id
             });
             setIsLoggedIn(true);
           } else {
@@ -92,7 +92,6 @@ export default function Home() {
     }
   };
   
- 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
