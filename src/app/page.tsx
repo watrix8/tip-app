@@ -44,9 +44,10 @@ export default function Home() {
       if (userId) {
         getDoc(doc(getFirestore(), 'Users', userId)).then((doc) => {
           if (doc.exists()) {
+            const { id, ...userData } = doc.data() as User; // Wykluczenie id z danych
             setCurrentUser({
-              id: doc.id,
-              ...doc.data() as User
+              ...userData,
+              id: doc.id // Ręczne przypisanie id
             });
             setIsLoggedIn(true);
           } else {
@@ -77,7 +78,7 @@ export default function Home() {
       alert('Nieprawidłowy email lub hasło');
     }
   };
-
+ 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
