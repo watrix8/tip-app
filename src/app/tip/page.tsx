@@ -1,23 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
+
+interface Waiter {
+  name: string;
+  id: string;
+  avatarUrl: string;
+}
 
 export default function TipPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [imageError, setImageError] = useState(false);
+  const [waiter, setWaiter] = useState<Waiter | null>(null);
 
   // Przykładowe kwoty napiwków
   const tipAmounts = [5, 10, 20];
 
-  // Mockowe dane kelnera (w prawdziwej aplikacji byłyby pobierane z URL lub API)
-  const waiter = {
-    name: "Jan Kowalski",
-    id: "W123",
-    avatarUrl: "https://nieistniejacy.url/zdjecie.jpg"
-  };
+  useEffect(() => {
+    // W prawdziwej aplikacji te dane powinny pochodzić z API lub URL
+    const fetchWaiterData = async () => {
+      // Zakładając, że dane kelnera są dostępne w URL lub API
+      const waiterData: Waiter = {
+        name: "Jan Kowalski", // Zmienimy to, by pochodziło z dynamicznych danych
+        id: "W123", // Jak wyżej
+        avatarUrl: "https://nieistniejacy.url/zdjecie.jpg", // Zmienimy to na dynamiczny URL
+      };
+      setWaiter(waiterData);
+    };
+
+    fetchWaiterData();
+  }, []);
 
   // Funkcja tworząca inicjały
   const getInitials = (name: string) => {
@@ -36,6 +51,10 @@ export default function TipPage() {
     }
     alert(`Przekierowanie do płatności: ${finalAmount} PLN`);
   };
+
+  if (!waiter) {
+    return <div>Ładowanie...</div>; // Pokazujemy komunikat, dopóki dane kelnera się ładują
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
