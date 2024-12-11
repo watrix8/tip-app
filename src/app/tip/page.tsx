@@ -1,7 +1,7 @@
-'use client';  // Dodaj dyrektywę na początku
+'use client'; // Dodaj dyrektywę na początku
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';  // Zamiast useRouter
+import { useSearchParams } from 'next/navigation'; // Poprawka
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
 
@@ -16,33 +16,24 @@ export default function TipPage() {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
-  const [loading, setLoading] = useState(true); // Stan ładowania
-  const searchParams = useSearchParams();  // Używamy useSearchParams do dostępu do query
+  const searchParams = useSearchParams();
+  const waiterId = searchParams.get('waiterId');
+  const name = searchParams.get('name');
 
   // Przykładowe kwoty napiwków
   const tipAmounts = [5, 10, 20];
 
   useEffect(() => {
-    const waiterId = searchParams.get('waiterId');
-    if (waiterId) {
-      // Przykład pobierania danych kelnera z API na podstawie waiterId
-      fetch(`/api/waiter/${waiterId}`)
-        .then((response) => response.json())
-        .then((data) => {
-          const waiterData: Waiter = {
-            name: data.name,  // Zakładając, że API zwróci dane o kelnerze
-            id: waiterId,
-            avatarUrl: data.avatarUrl,  // API powinno zwrócić odpowiedni URL
-          };
-          setWaiter(waiterData);
-          setLoading(false); // Ustawiamy stan ładowania na false po otrzymaniu danych
-        })
-        .catch(() => {
-          alert('Nie udało się pobrać danych kelnera.');
-          setLoading(false); // Ustawiamy stan ładowania na false, nawet jeśli wystąpił błąd
-        });
+    if (waiterId && name) {
+      // Zamiast API, tworzymy dane kelnera na podstawie query w URL
+      const waiterData: Waiter = {
+        name: name,
+        id: waiterId,
+        avatarUrl: "https://example.com/avatars/" + waiterId + ".jpg", // Przykład dynamicznego URL
+      };
+      setWaiter(waiterData);
     }
-  }, [searchParams]);  // Oczekujemy, że query się zmieni
+  }, [waiterId, name]);
 
   const getInitials = (name: string) => {
     return name
@@ -61,12 +52,8 @@ export default function TipPage() {
     alert(`Przekierowanie do płatności: ${finalAmount} PLN`);
   };
 
-  if (loading) {
-    return <div>Ładowanie...</div>; // Pokazujemy komunikat, dopóki dane kelnera się ładują
-  }
-
   if (!waiter) {
-    return <div>Nie znaleziono kelnera o podanym ID.</div>;
+    return <div>Ładowanie...</div>; // Pokazujemy komunikat, dopóki dane kelnera się ładują
   }
 
   return (
