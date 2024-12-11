@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
-import { mockUser } from '@/app/data/mockUser';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginButtonProps {
   onLogin: () => void;
@@ -12,49 +12,46 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
-  const handleLogin = () => {
-    if (email === mockUser.email && password === mockUser.password) {
-      setError('');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(email, password);
       onLogin();
-    } else {
+    } catch (error) {
       setError('Nieprawidłowy email lub hasło');
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm text-gray-500 text-center mb-4">
-        Demo - użyj:<br />
-        Email: {mockUser.email}<br />
-        Hasło: {mockUser.password}
-      </div>
-
+    <form onSubmit={handleLogin} className="space-y-4">
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-2 border rounded-lg mb-2"
+        className="w-full p-2 border rounded-lg"
+        required
       />
-
       <input
         type="password"
         placeholder="Hasło"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full p-2 border rounded-lg mb-2"
+        className="w-full p-2 border rounded-lg"
+        required
       />
-
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
+      {error && (
+        <p className="text-red-500 text-sm text-center">{error}</p>
+      )}
       <button 
+        type="submit"
         className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-        onClick={handleLogin}
       >
         <LogIn className="w-5 h-5 mr-2" />
-        Zaloguj się jako kelner
+        Zaloguj się
       </button>
-    </div>
+    </form>
   );
 }
