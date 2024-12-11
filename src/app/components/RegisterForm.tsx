@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { FirebaseError } from 'firebase/app';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -31,14 +32,18 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
       console.log("Rejestracja udana");
       alert('Rejestracja udana! Możesz się teraz zalogować.');
       onBackToLogin();
-    } catch (error: any) {
-      console.error("Szczegóły błędu rejestracji:", error.code, error.message);
-      if (error.code === 'auth/email-already-in-use') {
-        setError('Ten adres email jest już zajęty');
-      } else if (error.code === 'auth/weak-password') {
-        setError('Hasło jest za słabe - minimum 6 znaków');
+    } catch (error: FirebaseError | unknown) {
+      console.error("Szczegóły błędu rejestracji:", error);
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/email-already-in-use') {
+          setError('Ten adres email jest już zajęty');
+        } else if (error.code === 'auth/weak-password') {
+          setError('Hasło jest za słabe - minimum 6 znaków');
+        } else {
+          setError('Błąd rejestracji: ' + error.message);
+        }
       } else {
-        setError('Błąd rejestracji: ' + error.message);
+        setError('Wystąpił nieoczekiwany błąd');
       }
     }
   };
