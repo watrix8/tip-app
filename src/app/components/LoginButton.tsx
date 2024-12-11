@@ -17,10 +17,19 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Próba logowania z:", email);
       await login(email, password);
+      console.log("Logowanie udane");
       onLogin();
-    } catch {
-      setError('Nieprawidłowy email lub hasło');
+    } catch (error: any) {
+      console.error("Szczegóły błędu:", error.code, error.message);
+      if (error.code === 'auth/user-not-found') {
+        setError('Nie znaleziono użytkownika o podanym adresie email');
+      } else if (error.code === 'auth/wrong-password') {
+        setError('Nieprawidłowe hasło');
+      } else {
+        setError('Błąd logowania: ' + error.message);
+      }
     }
   };
 
