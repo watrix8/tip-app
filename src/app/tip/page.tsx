@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // Dodajemy router do pobrania waiterId z URL
+import { useRouter } from 'next/router';  // Używamy useRouter z Next.js
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
 
@@ -12,32 +10,26 @@ interface Waiter {
 }
 
 export default function TipPage() {
-  const router = useRouter();
-  const { query } = router;
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
+  const router = useRouter();  // Używamy useRouter w komponencie
 
   // Przykładowe kwoty napiwków
   const tipAmounts = [5, 10, 20];
 
   useEffect(() => {
-    if (!query.waiterId) return; // Jeśli waiterId nie ma w URL, nic nie rób
-
-    const fetchWaiterData = async () => {
-      // Załóżmy, że masz funkcję do pobierania danych kelnera z bazy na podstawie waiterId
-      const waiterId = query.waiterId as string;
-      
-      // Pobieramy dane kelnera z Firestore lub innej bazy
-      const response = await fetch(`/api/waiters/${waiterId}`); // Przykładowe API, dostosuj do własnych potrzeb
-      const waiterData: Waiter = await response.json(); // Zakładamy, że API zwraca dane kelnera w formacie JSON
-
+    if (router.query.waiterId) {
+      // W prawdziwej aplikacji dane kelnera powinny pochodzić z API lub URL
+      const waiterData: Waiter = {
+        name: "Jan Kowalski", // Zmienimy to, by pochodziło z dynamicznych danych
+        id: router.query.waiterId as string, // Korzystamy z query parametru
+        avatarUrl: "https://nieistniejacy.url/zdjecie.jpg", // Zmienimy to na dynamiczny URL
+      };
       setWaiter(waiterData);
-    };
-
-    fetchWaiterData();
-  }, [query.waiterId]);
+    }
+  }, [router.query]);  // Oczekujemy, że query się zmieni
 
   const getInitials = (name: string) => {
     return name
