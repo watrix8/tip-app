@@ -102,10 +102,10 @@ export default function Home() {
         ) : (
           <>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">TipApp</h1>
+              <h1 className="text-3xl font-bold text-gray-900">TipApp</h1>
               <p className="text-gray-500 mt-2">System napiwków dla kelnerów</p>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <LoginButton onLogin={handleLogin} />
               <button
                 onClick={() => setShowRegister(true)}

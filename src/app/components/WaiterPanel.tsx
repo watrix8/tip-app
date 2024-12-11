@@ -8,7 +8,7 @@ import Image from 'next/image';
 interface Tip {
   amount: number;
   timestamp: Date;
-  status: 'płatność rozpoczęta' | 'otrzymany' | 'rozliczony' | 'anulowany';
+  status: 'rozpoczęta' | 'otrzymany' | 'rozliczony' | 'anulowany';
 }
 
 interface WaiterPanelProps {
@@ -32,7 +32,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
   useEffect(() => {
     // Przykładowe dane napiwków z różnymi statusami
     const mockTips: Tip[] = [
-      { amount: 10, timestamp: new Date('2023-12-01T14:30:00'), status: 'płatność rozpoczęta' },
+      { amount: 10, timestamp: new Date('2023-12-01T14:30:00'), status: 'rozpoczęta' },
       { amount: 15, timestamp: new Date('2023-12-02T16:45:00'), status: 'otrzymany' },
       { amount: 8, timestamp: new Date('2023-12-03T12:00:00'), status: 'rozliczony' },
     ];
@@ -49,11 +49,21 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+    <div className="space-y-6 max-w-4xl mx-auto px-2 py-6 sm:px-4 sm:py-8">
+      {/* Przycisk wylogowania */}
+      <div className="flex justify-end">
+        <button
+          onClick={onLogout}
+          className="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg flex items-center hover:bg-gray-300 transition-colors"
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          Wyloguj się
+        </button>
+      </div>
+
       {/* Sekcja powitalna */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900">Witaj, {currentUser?.name}!</h2>
-        <p className="text-sm text-gray-500">ID: {currentUser?.id}</p>
       </div>
 
       {/* Sekcja z avatar i saldem */}
@@ -78,12 +88,12 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">{currentUser?.name}</h3>
-            <p className="text-sm text-gray-500">ID: {currentUser?.id}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-gray-900">{totalTips.toFixed(2)} PLN</p>
-          <p className="text-sm text-gray-500">Saldo do wypłaty</p>
+
+        {/* Kwota do wypłaty w zielonym kółku */}
+        <div className="flex items-center justify-center w-14 h-14 bg-green-500 text-white rounded-full">
+          <p className="font-bold text-lg">{totalTips.toFixed(2)}</p>
         </div>
       </div>
 
@@ -114,17 +124,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
           </div>
         </div>
         <p className="text-sm text-gray-500 mt-2 text-center">Pokaż ten kod klientom</p>
-      </div>
-
-      {/* Przycisk wylogowania */}
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={onLogout}
-          className="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg flex items-center hover:bg-gray-300 transition-colors"
-        >
-          <LogOut className="w-5 h-5 mr-2" />
-          Wyloguj się
-        </button>
       </div>
     </div>
   );
