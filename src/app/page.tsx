@@ -15,12 +15,12 @@ import {
   getDocs
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
-import { addUser } from '@/app/firebaseTest'; // Importuj funkcję dodawania użytkownika
+import { addUser } from '@/app/data/firebaseTest'; // Importuj funkcję dodawania użytkownika
 
 const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
   ssr: false
 });
-
+  
 interface User {
   id: string;
   name: string;
