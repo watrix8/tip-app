@@ -15,14 +15,12 @@ export default function OnboardingComplete() {
   useEffect(() => {
     const verifySetup = async () => {
       try {
-        // 1. Pobierz userId z URL lub localStorage
         const userId = searchParams.get('userId') || localStorage.getItem('onboarding_user_id');
         
         if (!userId) {
           throw new Error('Brak identyfikatora użytkownika');
         }
 
-        // 2. Aktualizuj status w bazie danych
         const db = getFirestore();
         const userDoc = doc(db, 'Users', userId);
         
@@ -31,16 +29,14 @@ export default function OnboardingComplete() {
           stripeOnboardingTimestamp: new Date().toISOString()
         });
 
-        // 3. Wyczyść localStorage
         localStorage.removeItem('onboarding_user_id');
 
-        // 4. Ustaw status sukcesu
         setStatus('success');
         setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
         
-        // 5. Po 3 sekundach przekieruj do panelu kelnera
+        // Zmieniamy przekierowanie na główną stronę
         setTimeout(() => {
-          router.push('/waiter-panel');
+          router.push('/');
         }, 3000);
 
       } catch (error) {
@@ -78,7 +74,8 @@ export default function OnboardingComplete() {
             <h2 className="mt-4 text-xl font-semibold text-red-700">Błąd</h2>
             <p className="mt-2 text-gray-600">{message}</p>
             <button
-              onClick={() => router.push('/waiter-panel')}
+              // Zmieniamy też przekierowanie w przycisku
+              onClick={() => router.push('/')}
               className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Wróć do panelu
