@@ -14,7 +14,7 @@ import {
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
 
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '');
+const stripePromise = loadStripe(process.env.STRIPE_PUBLISHABLE_KEY || '');
 
 interface Waiter {
   name: string;
