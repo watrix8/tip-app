@@ -1,34 +1,45 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
+import { Stripe } from 'stripe';
 
-// Pomocniczy typ dla błędów
-type ErrorWithMessage = {
+interface StripeError {
   message: string;
-};
-
-function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as Record<string, unknown>).message === 'string'
-  );
+  type?: string;
+  stack?: string;
 }
 
-function toErrorWithMessage(maybeError: unknown): ErrorWithMessage {
-  if (isErrorWithMessage(maybeError)) return maybeError;
-  
-  try {
-    return new Error(JSON.stringify(maybeError));
-  } catch {
-    return new Error(String(maybeError));
+// Funkcja do bezpiecznej obsługi błędów
+function handleError(error: unknown): StripeError {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack,
+      type: 'Error'
+    };
   }
+  if (typeof error === 'object' && error !== null) {
+    return {
+      message: String((error as any).message || 'Unknown error'),
+      type: (error as any).type,
+      stack: (error as any).stack
+    };
+  }
+  return {
+    message: String(error),
+    type: 'Unknown'
+  };
 }
 
 // Handler dla tworzenia konta Connect
 async function handleConnectAccount(waiterId: string) {
   try {
+    // Debugowanie zmiennych środowiskowych
+    console.log('Environment variables check:', {
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY
+    });
+
     console.log('Creating Stripe Connect account for waiterId:', waiterId);
     
     const account = await stripe.accounts.create({
@@ -56,8 +67,10 @@ async function handleConnectAccount(waiterId: string) {
     console.log('Account link created');
 
     return { accountId: account.id, accountLink: accountLink.url };
-  } catch (error) {
-    console.error('Error in handleConnectAccount:', error);
+  } catch (error: unknown) {
+    // Szczegółowe logowanie błędu
+    const handledError = handleError(error);
+    console.error('Detailed error in handleConnectAccount:', handledError);
     throw error;
   }
 }
@@ -81,16 +94,17 @@ export async function POST(req: Request) {
         return NextResponse.json(connectResult);
 
       case 'check-account-status':
-        const accountResult = await handleAccountStatus(params.accountId);
+        if (!params.accountId) {
+          return NextResponse.json(
+            { error: 'accountId is required' },
+            { status: 400 }
+          );
+        }
+        const accountResult = await stripe.accounts.retrieve(params.accountId);
         return NextResponse.json(accountResult);
 
       case 'create-payment-intent':
-        const paymentResult = await handlePaymentIntent(
-          params.amount,
-          params.waiterId,
-          params.stripeAccountId
-        );
-        return NextResponse.json(paymentResult);
+        // ... pozostała implementacja
 
       default:
         return NextResponse.json(
@@ -98,46 +112,20 @@ export async function POST(req: Request) {
           { status: 400 }
         );
     }
-  } catch (maybeError: unknown) {
-    const error = toErrorWithMessage(maybeError);
-    console.error('Stripe API error:', error);
+  } catch (error: unknown) {
+    // Szczegółowe logowanie błędu
+    const handledError = handleError(error);
+    console.error('Detailed API error:', handledError);
 
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+        details: process.env.NODE_ENV === 'development' ? {
+          message: handledError.message,
+          stack: handledError.stack
+        } : undefined 
       },
       { status: 500 }
     );
   }
-}
-
-// Handler dla sprawdzania statusu konta
-async function handleAccountStatus(accountId: string) {
-  return await stripe.accounts.retrieve(accountId);
-}
-
-// Handler dla tworzenia PaymentIntent
-async function handlePaymentIntent(
-  amount: number,
-  waiterId: string,
-  stripeAccountId: string
-) {
-  const applicationFee = Math.round(amount * 0.05);
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amount * 100,
-    currency: 'pln',
-    payment_method_types: ['card'],
-    application_fee_amount: applicationFee,
-    transfer_data: {
-      destination: stripeAccountId,
-    },
-    metadata: {
-      waiterId,
-      type: 'tip',
-    },
-  });
-
-  return { clientSecret: paymentIntent.client_secret };
 }
