@@ -2,30 +2,45 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
 
-// Handler dla tworzenia konta Connect
+// W funkcji handleConnectAccount dodaj sprawdzanie statusu
 async function handleConnectAccount(waiterId: string, refreshUrl: string, returnUrl: string) {
-  const account = await stripe.accounts.create({
-    type: 'express',
-    country: 'PL',
-    capabilities: {
-      card_payments: { requested: true },
-      transfers: { requested: true },
-    },
-    business_type: 'individual',
-    metadata: {
-      waiterId,
-    },
-  });
-
-  const accountLink = await stripe.accountLinks.create({
-    account: account.id,
-    refresh_url: refreshUrl,
-    return_url: returnUrl,
-    type: 'account_onboarding',
-  });
-
-  return { accountId: account.id, accountLink: accountLink.url };
-}
+    try {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'PL',
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'individual',
+        metadata: {
+          waiterId,
+        },
+      });
+  
+      // Dodaj sprawdzanie statusu konta
+      const accountDetails = await stripe.accounts.retrieve(account.id);
+      const isComplete = accountDetails.details_submitted && 
+                        accountDetails.payouts_enabled &&
+                        accountDetails.charges_enabled;
+  
+      const accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+  
+      return { 
+        accountId: account.id, 
+        accountLink: accountLink.url,
+        isComplete 
+      };
+    } catch (error) {
+      console.error('Error creating Stripe account:', error);
+      throw error;
+    }
+  }
 
 // Handler dla tworzenia PaymentIntent
 async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {

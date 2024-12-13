@@ -21,6 +21,33 @@ export default function OnboardingComplete() {
           throw new Error('Brak identyfikatora użytkownika');
         }
 
+        // Sprawdź status w Stripe
+        const response = await fetch('/api/stripe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            action: 'check-account-status',
+            accountId: userId 
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Błąd podczas sprawdzania statusu konta');
+        }
+
+        const accountStatus = await response.json();
+        
+        if (!accountStatus.details_submitted || 
+            !accountStatus.payouts_enabled || 
+            !accountStatus.charges_enabled) {
+          // Jeśli konto nie jest w pełni skonfigurowane, przekieruj na refresh
+          window.location.href = `/onboarding/refresh?userId=${userId}`;
+          return;
+        }
+
+        // Aktualizuj status w bazie danych
         const db = getFirestore();
         const userDoc = doc(db, 'Users', userId);
         
@@ -29,14 +56,15 @@ export default function OnboardingComplete() {
           stripeOnboardingTimestamp: new Date().toISOString()
         });
 
+        // Wyczyść localStorage
         localStorage.removeItem('onboarding_user_id');
 
         setStatus('success');
         setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
         
-        // Zamiast przekierowania, wymuszamy pełne odświeżenie strony
+        // Przekieruj po 3 sekundach
         setTimeout(() => {
-          window.location.href = '/';  // Użycie window.location.href zamiast router.push()
+          window.location.href = '/';
         }, 3000);
 
       } catch (error) {
@@ -75,7 +103,7 @@ export default function OnboardingComplete() {
             <p className="mt-2 text-gray-600">{message}</p>
             <button
               onClick={() => {
-                window.location.href = '/';  // Również tutaj używamy window.location.href
+                window.location.href = '/';
               }}
               className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
