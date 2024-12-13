@@ -14,7 +14,11 @@ import {
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
 
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.STRIPE_PUBLISHABLE_KEY || '');
+console.log('Stripe Key:', process.env.NEXT_PUBLIC_STRIPE_KEY);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || (() => {
+  console.error('Missing Stripe publishable key!');
+  return '';
+})());
 
 interface Waiter {
   name: string;
