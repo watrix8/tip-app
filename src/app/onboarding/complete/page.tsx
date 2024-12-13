@@ -34,9 +34,9 @@ export default function OnboardingComplete() {
         setStatus('success');
         setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
         
-        // Zmieniamy przekierowanie na główną stronę
+        // Zamiast przekierowania, wymuszamy pełne odświeżenie strony
         setTimeout(() => {
-          router.push('/');
+          window.location.href = '/';  // Użycie window.location.href zamiast router.push()
         }, 3000);
 
       } catch (error) {
@@ -74,8 +74,9 @@ export default function OnboardingComplete() {
             <h2 className="mt-4 text-xl font-semibold text-red-700">Błąd</h2>
             <p className="mt-2 text-gray-600">{message}</p>
             <button
-              // Zmieniamy też przekierowanie w przycisku
-              onClick={() => router.push('/')}
+              onClick={() => {
+                window.location.href = '/';  // Również tutaj używamy window.location.href
+              }}
               className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Wróć do panelu
