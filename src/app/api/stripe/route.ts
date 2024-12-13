@@ -1,10 +1,15 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
-import { Stripe } from 'stripe';
 
 interface StripeError {
   message: string;
+  type?: string;
+  stack?: string;
+}
+
+interface StripeErrorObject {
+  message?: string;
   type?: string;
   stack?: string;
 }
@@ -19,10 +24,11 @@ function handleError(error: unknown): StripeError {
     };
   }
   if (typeof error === 'object' && error !== null) {
+    const errorObj = error as StripeErrorObject;
     return {
-      message: String((error as any).message || 'Unknown error'),
-      type: (error as any).type,
-      stack: (error as any).stack
+      message: String(errorObj.message || 'Unknown error'),
+      type: errorObj.type,
+      stack: errorObj.stack
     };
   }
   return {
@@ -104,7 +110,28 @@ export async function POST(req: Request) {
         return NextResponse.json(accountResult);
 
       case 'create-payment-intent':
-        // ... pozostała implementacja
+        if (!params.amount || !params.waiterId || !params.stripeAccountId) {
+          return NextResponse.json(
+            { error: 'Missing required parameters' },
+            { status: 400 }
+          );
+        }
+        
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: params.amount * 100,
+          currency: 'pln',
+          payment_method_types: ['card'],
+          application_fee_amount: Math.round(params.amount * 5), // 5% fee
+          transfer_data: {
+            destination: params.stripeAccountId,
+          },
+          metadata: {
+            waiterId: params.waiterId,
+            type: 'tip',
+          },
+        });
+
+        return NextResponse.json({ clientSecret: paymentIntent.client_secret });
 
       default:
         return NextResponse.json(
