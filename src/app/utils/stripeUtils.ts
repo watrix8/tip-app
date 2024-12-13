@@ -1,4 +1,3 @@
-// app/utils/stripeUtils.ts
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
 import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -26,7 +25,10 @@ export const initializeStripeConnect = async (waiterId: string) => {
   }
 
   try {
-    // 1. Najpierw tworzymy konto Stripe
+    // Zapisujemy ID użytkownika w localStorage przed rozpoczęciem procesu
+    localStorage.setItem('onboarding_user_id', waiterId);
+    
+    // 1. Tworzymy konto Stripe
     const response = await fetch('/api/stripe', {
       method: 'POST',
       headers: {
@@ -34,7 +36,10 @@ export const initializeStripeConnect = async (waiterId: string) => {
       },
       body: JSON.stringify({ 
         action: 'create-connect-account',
-        waiterId 
+        waiterId,
+        // Dodajemy URL-e z parametrami użytkownika
+        refreshUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding/refresh?userId=${waiterId}`,
+        returnUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding/complete?userId=${waiterId}`
       }),
     });
     

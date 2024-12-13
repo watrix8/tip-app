@@ -2,83 +2,56 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
 
-interface StripeError {
-  message: string;
-  type?: string;
-  stack?: string;
-}
-
-interface StripeErrorObject {
-  message?: string;
-  type?: string;
-  stack?: string;
-}
-
-// Funkcja do bezpiecznej obsługi błędów
-function handleError(error: unknown): StripeError {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      stack: error.stack,
-      type: 'Error'
-    };
-  }
-  if (typeof error === 'object' && error !== null) {
-    const errorObj = error as StripeErrorObject;
-    return {
-      message: String(errorObj.message || 'Unknown error'),
-      type: errorObj.type,
-      stack: errorObj.stack
-    };
-  }
-  return {
-    message: String(error),
-    type: 'Unknown'
-  };
-}
-
 // Handler dla tworzenia konta Connect
-async function handleConnectAccount(waiterId: string) {
-  try {
-    // Debugowanie zmiennych środowiskowych
-    console.log('Environment variables check:', {
-      baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
-      hasStripeKey: !!process.env.STRIPE_SECRET_KEY
-    });
+async function handleConnectAccount(waiterId: string, refreshUrl: string, returnUrl: string) {
+  const account = await stripe.accounts.create({
+    type: 'express',
+    country: 'PL',
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+    business_type: 'individual',
+    metadata: {
+      waiterId,
+    },
+  });
 
-    console.log('Creating Stripe Connect account for waiterId:', waiterId);
-    
-    const account = await stripe.accounts.create({
-      type: 'express',
-      country: 'PL',
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      business_type: 'individual',
-      metadata: {
-        waiterId,
-      },
-    });
+  const accountLink = await stripe.accountLinks.create({
+    account: account.id,
+    refresh_url: refreshUrl,
+    return_url: returnUrl,
+    type: 'account_onboarding',
+  });
 
-    console.log('Stripe account created:', account.id);
+  return { accountId: account.id, accountLink: accountLink.url };
+}
 
-    const accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding/refresh`,
-      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding/complete`,
-      type: 'account_onboarding',
-    });
+// Handler dla tworzenia PaymentIntent
+async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {
+  const applicationFee = Math.round(amount * 0.05);
 
-    console.log('Account link created');
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount * 100,
+    currency: 'pln',
+    payment_method_types: ['card'],
+    application_fee_amount: applicationFee,
+    transfer_data: {
+      destination: stripeAccountId,
+    },
+    metadata: {
+      waiterId,
+      type: 'tip',
+    },
+  });
 
-    return { accountId: account.id, accountLink: accountLink.url };
-  } catch (error: unknown) {
-    // Szczegółowe logowanie błędu
-    const handledError = handleError(error);
-    console.error('Detailed error in handleConnectAccount:', handledError);
-    throw error;
-  }
+  return { clientSecret: paymentIntent.client_secret };
+}
+
+// Handler dla sprawdzania statusu konta
+async function handleAccountStatus(accountId: string) {
+  const account = await stripe.accounts.retrieve(accountId);
+  return account;
 }
 
 export async function POST(req: Request) {
@@ -86,52 +59,26 @@ export async function POST(req: Request) {
     const data = await req.json();
     const { action, ...params } = data;
 
-    console.log('Received request with action:', action, 'and params:', params);
-
     switch (action) {
       case 'create-connect-account':
-        if (!params.waiterId) {
-          return NextResponse.json(
-            { error: 'waiterId is required' },
-            { status: 400 }
-          );
-        }
-        const connectResult = await handleConnectAccount(params.waiterId);
+        const connectResult = await handleConnectAccount(
+          params.waiterId,
+          params.refreshUrl,  // Używamy przekazanego URL
+          params.returnUrl    // Używamy przekazanego URL
+        );
         return NextResponse.json(connectResult);
 
-      case 'check-account-status':
-        if (!params.accountId) {
-          return NextResponse.json(
-            { error: 'accountId is required' },
-            { status: 400 }
-          );
-        }
-        const accountResult = await stripe.accounts.retrieve(params.accountId);
-        return NextResponse.json(accountResult);
-
       case 'create-payment-intent':
-        if (!params.amount || !params.waiterId || !params.stripeAccountId) {
-          return NextResponse.json(
-            { error: 'Missing required parameters' },
-            { status: 400 }
-          );
-        }
-        
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: params.amount * 100,
-          currency: 'pln',
-          payment_method_types: ['card'],
-          application_fee_amount: Math.round(params.amount * 5), // 5% fee
-          transfer_data: {
-            destination: params.stripeAccountId,
-          },
-          metadata: {
-            waiterId: params.waiterId,
-            type: 'tip',
-          },
-        });
+        const paymentResult = await handlePaymentIntent(
+          params.amount,
+          params.waiterId,
+          params.stripeAccountId
+        );
+        return NextResponse.json(paymentResult);
 
-        return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+      case 'check-account-status':
+        const accountResult = await handleAccountStatus(params.accountId);
+        return NextResponse.json(accountResult);
 
       default:
         return NextResponse.json(
@@ -139,19 +86,10 @@ export async function POST(req: Request) {
           { status: 400 }
         );
     }
-  } catch (error: unknown) {
-    // Szczegółowe logowanie błędu
-    const handledError = handleError(error);
-    console.error('Detailed API error:', handledError);
-
+  } catch (error) {
+    console.error('Stripe API error:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? {
-          message: handledError.message,
-          stack: handledError.stack
-        } : undefined 
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

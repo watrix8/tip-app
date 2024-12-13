@@ -1,40 +1,44 @@
-// src/app/onboarding/complete/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { doc, getFirestore, updateDoc } from 'firebase/firestore';
-import { auth } from '@/app/config/firebase';
+import { STRIPE_ONBOARDING_STATUS } from '@/app/utils/stripeUtils';
 
 export default function OnboardingComplete() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Weryfikacja konfiguracji konta...');
 
   useEffect(() => {
     const verifySetup = async () => {
       try {
-        // 1. Sprawdź czy użytkownik jest zalogowany
-        const user = auth.currentUser;
-        if (!user) {
-          throw new Error('Użytkownik nie jest zalogowany');
+        // 1. Pobierz userId z URL lub localStorage
+        const userId = searchParams.get('userId') || localStorage.getItem('onboarding_user_id');
+        
+        if (!userId) {
+          throw new Error('Brak identyfikatora użytkownika');
         }
 
         // 2. Aktualizuj status w bazie danych
         const db = getFirestore();
-        const userDoc = doc(db, 'Users', user.uid);
+        const userDoc = doc(db, 'Users', userId);
         
         await updateDoc(userDoc, {
-          stripeOnboardingCompleted: true,
+          stripeOnboardingStatus: STRIPE_ONBOARDING_STATUS.COMPLETED,
           stripeOnboardingTimestamp: new Date().toISOString()
         });
 
-        // 3. Ustaw status sukcesu
+        // 3. Wyczyść localStorage
+        localStorage.removeItem('onboarding_user_id');
+
+        // 4. Ustaw status sukcesu
         setStatus('success');
         setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
         
-        // 4. Po 3 sekundach przekieruj do panelu kelnera
+        // 5. Po 3 sekundach przekieruj do panelu kelnera
         setTimeout(() => {
           router.push('/waiter-panel');
         }, 3000);
@@ -47,7 +51,7 @@ export default function OnboardingComplete() {
     };
 
     verifySetup();
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
