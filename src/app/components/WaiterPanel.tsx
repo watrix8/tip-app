@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState, useEffect } from 'react';
 import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
+import { auth } from '@/app/config/firebase';
 
 interface WaiterPanelProps {
   onLogout: () => void;
@@ -27,6 +28,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     async function checkStripeEnabled() {
       if (currentUser?.id) {
         try {
+          setIsLoading(true); // Ustawiamy loading przy każdym sprawdzeniu
           const status = await checkStripeAccountStatus(currentUser.id);
           setIsStripeEnabled(status);
         } catch (error) {
@@ -37,7 +39,18 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       }
     }
     
+    // Sprawdzamy status przy pierwszym renderowaniu
     checkStripeEnabled();
+
+    // Dodajemy nasłuchiwanie na zmiany stanu autoryzacji
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && currentUser?.id) {
+        checkStripeEnabled();
+      }
+    });
+
+    // Czyszczenie subskrypcji
+    return () => unsubscribe();
   }, [currentUser?.id]);
 
   // Handler do konfiguracji Stripe
