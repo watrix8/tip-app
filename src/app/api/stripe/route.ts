@@ -1,6 +1,6 @@
-// app/api/stripe/route.ts
+// src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
-import { stripe } from '../stripe-config';
+import { stripe } from '@/app/config/stripe';
 
 // Handler dla tworzenia konta Connect
 async function handleConnectAccount(waiterId: string) {
