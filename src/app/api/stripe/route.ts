@@ -1,8 +1,8 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
-// W funkcji handleConnectAccount dodaj sprawdzanie statusu
 async function handleConnectAccount(waiterId: string, refreshUrl: string, returnUrl: string) {
     try {
       const account = await stripe.accounts.create({
@@ -11,6 +11,7 @@ async function handleConnectAccount(waiterId: string, refreshUrl: string, return
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
+          blik_payments: { requested: true },
         },
         business_type: 'individual',
         metadata: {
@@ -18,7 +19,6 @@ async function handleConnectAccount(waiterId: string, refreshUrl: string, return
         },
       });
   
-      // Dodaj sprawdzanie statusu konta
       const accountDetails = await stripe.accounts.retrieve(account.id);
       const isComplete = accountDetails.details_submitted && 
                         accountDetails.payouts_enabled &&
@@ -40,33 +40,77 @@ async function handleConnectAccount(waiterId: string, refreshUrl: string, return
       console.error('Error creating Stripe account:', error);
       throw error;
     }
-  }
-
-// Handler dla tworzenia PaymentIntent
-async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {
-  const applicationFee = Math.round(amount * 0.05);
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amount * 100,
-    currency: 'pln',
-    payment_method_types: ['card'],
-    application_fee_amount: applicationFee,
-    transfer_data: {
-      destination: stripeAccountId,
-    },
-    metadata: {
-      waiterId,
-      type: 'tip',
-    },
-  });
-
-  return { clientSecret: paymentIntent.client_secret };
 }
 
-// Handler dla sprawdzania statusu konta
+async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {
+  try {
+    // Sprawdzanie czy kelner ma konto Stripe
+    const db = getFirestore();
+    const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
+    
+    if (!waiterDoc.exists()) {
+      throw new Error('Nie znaleziono kelnera');
+    }
+
+    const waiterData = waiterDoc.data();
+    const connectedAccountId = stripeAccountId || waiterData?.stripeAccountId;
+
+    if (!connectedAccountId) {
+      throw new Error('Kelner nie ma skonfigurowanego konta Stripe');
+    }
+
+    // Sprawdzanie statusu konta Stripe
+    const account = await stripe.accounts.retrieve(connectedAccountId);
+    if (!account.charges_enabled || !account.payouts_enabled) {
+      throw new Error('Konto Stripe kelnera nie jest w pełni skonfigurowane');
+    }
+
+    // Tworzenie PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Konwersja na centy
+      currency: 'pln',
+      payment_method_types: [
+        'card',
+        'blik',
+        'google_pay', // Prawidłowa nazwa dla Google Pay
+        'apple_pay'   // Prawidłowa nazwa dla Apple Pay
+      ],
+      application_fee_amount: Math.round(amount * 0.05 * 100), // 5% prowizji
+      transfer_data: {
+        destination: connectedAccountId,
+      },
+      metadata: {
+        waiterId,
+        type: 'tip',
+      },
+      statement_descriptor: 'NAPIWEK', // Opis na wyciągu z karty
+      statement_descriptor_suffix: 'TIP',
+    });
+
+    return { 
+      clientSecret: paymentIntent.client_secret,
+      accountId: connectedAccountId 
+    };
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    throw error;
+  }
+}
+
 async function handleAccountStatus(accountId: string) {
-  const account = await stripe.accounts.retrieve(accountId);
-  return account;
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    return {
+      details_submitted: account.details_submitted,
+      charges_enabled: account.charges_enabled,
+      payouts_enabled: account.payouts_enabled,
+      requirements: account.requirements,
+      capabilities: account.capabilities
+    };
+  } catch (error) {
+    console.error('Error checking account status:', error);
+    throw error;
+  }
 }
 
 export async function POST(req: Request) {
@@ -78,8 +122,8 @@ export async function POST(req: Request) {
       case 'create-connect-account':
         const connectResult = await handleConnectAccount(
           params.waiterId,
-          params.refreshUrl,  // Używamy przekazanego URL
-          params.returnUrl    // Używamy przekazanego URL
+          params.refreshUrl,
+          params.returnUrl
         );
         return NextResponse.json(connectResult);
 
@@ -97,15 +141,18 @@ export async function POST(req: Request) {
 
       default:
         return NextResponse.json(
-          { error: 'Invalid action' },
+          { error: 'Nieprawidłowa akcja' },
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Stripe API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { 
+        error: error.message || 'Wystąpił błąd wewnętrzny',
+        details: error.details || {} 
+      },
+      { status: error.status || 500 }
     );
   }
 }
