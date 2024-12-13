@@ -1,7 +1,8 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
 import { stripe } from '@/app/config/stripe';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/app/config/firebase'; // Importujemy już zainicjalizowaną instancję
 
 // Interfejs dla błędów Stripe
 interface StripeError extends Error {
@@ -51,59 +52,57 @@ async function handleConnectAccount(waiterId: string, refreshUrl: string, return
 }
 
 async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {
- try {
-   // Sprawdzanie czy kelner ma konto Stripe
-   const db = getFirestore();
-   const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
+    try {
+      // Sprawdzanie czy kelner ma konto Stripe
+      const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
+      
+      if (!waiterDoc.exists()) {
+        throw new Error('Nie znaleziono kelnera');
+      }
    
-   if (!waiterDoc.exists()) {
-     throw new Error('Nie znaleziono kelnera');
+      const waiterData = waiterDoc.data();
+      const connectedAccountId = stripeAccountId || waiterData?.stripeAccountId;
+   
+      if (!connectedAccountId) {
+        throw new Error('Kelner nie ma skonfigurowanego konta Stripe');
+      }
+   
+      // Sprawdzanie statusu konta Stripe
+      const account = await stripe.accounts.retrieve(connectedAccountId);
+      if (!account.charges_enabled || !account.payouts_enabled) {
+        throw new Error('Konto Stripe kelnera nie jest w pełni skonfigurowane');
+      }
+   
+      // Tworzenie PaymentIntent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Konwersja na centy
+        currency: 'pln',
+        payment_method_types: [
+          'card',
+          'blik',
+          'p24'         // Przelewy24
+        ],
+        application_fee_amount: Math.round(amount * 0.05 * 100), // 5% prowizji
+        transfer_data: {
+          destination: connectedAccountId,
+        },
+        metadata: {
+          waiterId,
+          type: 'tip',
+        },
+        statement_descriptor: 'NAPIWEK', // Opis na wyciągu z karty
+        statement_descriptor_suffix: 'TIP',
+      });
+   
+      return { 
+        clientSecret: paymentIntent.client_secret,
+        accountId: connectedAccountId 
+      };
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      throw error;
+    }
    }
-
-   const waiterData = waiterDoc.data();
-   const connectedAccountId = stripeAccountId || waiterData?.stripeAccountId;
-
-   if (!connectedAccountId) {
-     throw new Error('Kelner nie ma skonfigurowanego konta Stripe');
-   }
-
-   // Sprawdzanie statusu konta Stripe
-   const account = await stripe.accounts.retrieve(connectedAccountId);
-   if (!account.charges_enabled || !account.payouts_enabled) {
-     throw new Error('Konto Stripe kelnera nie jest w pełni skonfigurowane');
-   }
-
-   // Tworzenie PaymentIntent
-   const paymentIntent = await stripe.paymentIntents.create({
-     amount: Math.round(amount * 100), // Konwersja na centy
-     currency: 'pln',
-     payment_method_types: [
-       'card',
-       'blik',
-       'google_pay', // Prawidłowa nazwa dla Google Pay
-       'apple_pay'   // Prawidłowa nazwa dla Apple Pay
-     ],
-     application_fee_amount: Math.round(amount * 0.05 * 100), // 5% prowizji
-     transfer_data: {
-       destination: connectedAccountId,
-     },
-     metadata: {
-       waiterId,
-       type: 'tip',
-     },
-     statement_descriptor: 'NAPIWEK', // Opis na wyciągu z karty
-     statement_descriptor_suffix: 'TIP',
-   });
-
-   return { 
-     clientSecret: paymentIntent.client_secret,
-     accountId: connectedAccountId 
-   };
- } catch (error) {
-   console.error('Error creating payment intent:', error);
-   throw error;
- }
-}
 
 async function handleAccountStatus(accountId: string) {
  try {
