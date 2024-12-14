@@ -16,17 +16,27 @@ export default function LoginButton() {
     setError('');
     try {
       console.log('Próba logowania dla:', email);
+      // Sprawdźmy konfigurację Firebase przed próbą logowania
+      console.log('Firebase Auth initialized:', !!auth);
+      console.log('Firebase Config:', {
+        apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+      });
+      
       await signInWithEmailAndPassword(auth, email, password);
       console.log('Logowanie udane');
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
+      // Dodajmy więcej szczegółów o błędzie
       if (err instanceof FirebaseError) {
+        console.log('Firebase Error Code:', err.code);
+        console.log('Firebase Error Message:', err.message);
         switch (err.code) {
           case 'auth/invalid-credential':
-            setError('Nieprawidłowy email lub hasło');
+            setError('Nieprawidłowy email lub hasło. Sprawdź czy konto zostało utworzone w Firebase Auth.');
             break;
           case 'auth/user-not-found':
-            setError('Użytkownik nie istnieje');
+            setError('Użytkownik nie istnieje w Firebase Auth');
             break;
           case 'auth/wrong-password':
             setError('Nieprawidłowe hasło');
