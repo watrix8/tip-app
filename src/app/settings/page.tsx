@@ -1,12 +1,10 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/app/contexts/AuthContext'; // Ścieżka do kontekstu autoryzacji
+import { useAuth } from '@/app/contexts/AuthContext';
 import { db } from '@/app/config/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const SettingsPage = () => {
-  const { user } = useAuth(); // Pobranie użytkownika z kontekstu
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -23,6 +21,21 @@ const SettingsPage = () => {
           setEmail(userData.email);
         } else {
           console.error('Dokument użytkownika nie istnieje');
+          
+          // Jeśli dokument nie istnieje, tworzymy nowy
+          try {
+            await setDoc(userDocRef, {
+              name: '',
+              email: user.email || '',
+            });
+            console.log('Dokument użytkownika został utworzony');
+            // Ustawienie wartości domyślnych po stworzeniu dokumentu
+            setName('');
+            setEmail(user.email || '');
+          } catch (error) {
+            console.error('Błąd podczas tworzenia dokumentu użytkownika:', error);
+            setError('Nie udało się utworzyć dokumentu użytkownika');
+          }
         }
       };
 
