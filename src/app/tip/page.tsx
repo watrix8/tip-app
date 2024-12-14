@@ -12,9 +12,9 @@ import {
   PaymentElement 
 } from '@stripe/react-stripe-js';
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
- 
-// Initialize Stripe
-const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
+
+// Initialize Stripe with public key from environment variable
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 
 interface Waiter {
