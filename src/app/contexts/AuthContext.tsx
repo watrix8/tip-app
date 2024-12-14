@@ -1,4 +1,3 @@
-// AuthContext.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -21,7 +20,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-const PROTECTED_ROUTES = ['/settings', '/waiter-panel'];
+const PUBLIC_ROUTES = ['/login', '/register', '/'];
+const HOME_ROUTE = '/waiter-panel';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -39,17 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentPath: pathname
       });
 
-      // Sprawdź czy jesteśmy na chronionej ścieżce
-      const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route));
-
-      if (!firebaseUser && isProtectedRoute) {
-        console.log('[AuthContext] No user on protected route, redirecting to login');
-        router.push('/login');
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
       if (firebaseUser) {
         // Sprawdzamy czy użytkownik faktycznie istnieje w Firestore
         const db = getFirestore();
@@ -60,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('[AuthContext] User document not found, signing out');
             await signOut(auth);
             setUser(null);
-            if (isProtectedRoute) {
+            if (!PUBLIC_ROUTES.includes(pathname || '')) {
               router.push('/login');
             }
           } else {
@@ -70,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('[AuthContext] Error checking user document:', error);
           setUser(null);
-          if (isProtectedRoute) {
+          if (!PUBLIC_ROUTES.includes(pathname || '')) {
             router.push('/login');
           }
         }
@@ -86,12 +75,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pathname, router]);
 
+  useEffect(() => {
+    if (loading) return;
+
+    console.log('[AuthContext] Route check:', {
+      pathname,
+      isPublicRoute: PUBLIC_ROUTES.includes(pathname || ''),
+      user: !!user
+    });
+
+    // Jeśli użytkownik jest zalogowany i próbuje dostać się do strony logowania
+    // przekieruj go na stronę główną
+    if (user && PUBLIC_ROUTES.includes(pathname || '') && pathname !== '/') {
+      console.log('[AuthContext] Logged in user trying to access public route, redirecting to home');
+      router.push(HOME_ROUTE);
+      return;
+    }
+
+    // Jeśli użytkownik nie jest zalogowany i próbuje dostać się do chronionej strony
+    if (!user && !PUBLIC_ROUTES.includes(pathname || '') && pathname !== '/') {
+      console.log('[AuthContext] Unauthorized access attempt, redirecting to login');
+      router.push('/login');
+      return;
+    }
+  }, [user, pathname, router, loading]);
+
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('[AuthContext] Login successful:', result.user);
       setUser(result.user);
+      
+      // Sprawdź czy użytkownik istnieje w Firestore
+      const db = getFirestore();
+      const userDoc = await getDoc(doc(db, 'Users', result.user.uid));
+      
+      if (!userDoc.exists()) {
+        console.error('[AuthContext] User document not found after login');
+        await signOut(auth);
+        setUser(null);
+        throw new Error('Użytkownik nie istnieje w systemie');
+      }
+
+      // Po zalogowaniu przekieruj na stronę główną
+      router.push(HOME_ROUTE);
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
@@ -104,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       setUser(null);
+      // Po wylogowaniu przekieruj na stronę logowania
       router.push('/login');
       console.log('[AuthContext] Logout successful');
     } catch (error) {
