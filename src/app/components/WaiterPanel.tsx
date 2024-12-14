@@ -1,8 +1,8 @@
-import { LogOut, AlertCircle, ExternalLink, LineChart } from 'lucide-react';
+import { LogOut, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
-// import { auth } from '@/app/config/firebase';
-// import { stripe } from '@/app/config/stripe';
+import { auth } from '@/app/config/firebase';
+import StripeExpressDashboard from './dashboard/StripeExpressDashboard';
 
 interface WaiterPanelProps {
   onLogout: () => void;
@@ -13,12 +13,41 @@ interface WaiterPanelProps {
   } | null;
 }
 
+// Przykładowy interfejs dla historii napiwków
+interface TipHistory {
+  id: string;
+  amount: number;
+  date: Date;
+}
+
 export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps) {
   const [isStripeEnabled, setIsStripeEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [stripeDashboardUrl, setStripeDashboardUrl] = useState('');
+  const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
 
-  // Hook sprawdzający status Stripe i pobierający URL do dashboardu
+  // Hook do pobierania historii napiwków
+  useEffect(() => {
+    const fetchTipHistory = () => {
+      const mockData = [
+        { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
+        { id: '2', amount: 15, date: new Date('2024-03-14T15:45:00') },
+        { id: '3', amount: 20, date: new Date('2024-03-13T18:20:00') },
+      ];
+      setTipHistory(mockData);
+    };
+
+    if (currentUser?.id) {
+      fetchTipHistory();
+    }
+  }, [currentUser?.id]);
+
+  // Funkcja generująca URL strony do napiwków
+  const getTipPageUrl = () => {
+    if (!currentUser?.id || !currentUser?.name) return '';
+    return `${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser.id}&name=${encodeURIComponent(currentUser.name)}`;
+  };
+
+  // Hook sprawdzający status Stripe
   useEffect(() => {
     async function checkStripeEnabled() {
       if (currentUser?.id) {
@@ -26,23 +55,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
           setIsLoading(true);
           const status = await checkStripeAccountStatus(currentUser.id);
           setIsStripeEnabled(status);
-          
-          if (status) {
-            // Pobierz URL do Stripe Express Dashboard
-            const response = await fetch('/api/stripe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'create-login-link',
-                userId: currentUser.id
-              })
-            });
-            
-            if (response.ok) {
-              const { url } = await response.json();
-              setStripeDashboardUrl(url);
-            }
-          }
         } catch (error) {
           console.error('Błąd podczas sprawdzania statusu Stripe:', error);
         } finally {
@@ -52,6 +64,14 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
     
     checkStripeEnabled();
+
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && currentUser?.id) {
+        checkStripeEnabled();
+      }
+    });
+
+    return () => unsubscribe();
   }, [currentUser?.id]);
 
   // Handler do konfiguracji Stripe
@@ -66,17 +86,12 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   };
 
-  // Handler otwierający dashboard Stripe w nowym oknie
-  const handleOpenStripeDashboard = () => {
-    if (stripeDashboardUrl) {
-      window.open(stripeDashboardUrl, '_blank', 'noopener,noreferrer');
+  // Handler otwierający stronę napiwków w nowym oknie
+  const handleTipPageOpen = () => {
+    const url = getTipPageUrl();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
-  };
-
-  // Generowanie URL strony do napiwków
-  const getTipPageUrl = () => {
-    if (!currentUser?.id || !currentUser?.name) return '';
-    return `${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser.id}&name=${encodeURIComponent(currentUser.name)}`;
   };
 
   return (
@@ -111,50 +126,68 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
         </div>
       )}
 
-      {/* Sekcja z linkami (Stripe Dashboard i strona napiwków) */}
+      {/* Link do strony napiwków */}
       {isStripeEnabled && !isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Link do Stripe Dashboard */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-center mb-4">
-              <LineChart className="w-12 h-12 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-center mb-4">
-              Panel zarobków i statystyk
-            </h3>
-            <p className="text-sm text-gray-600 text-center mb-4">
-              Zobacz swoje zarobki, historię transakcji i statystyki w panelu Stripe
-            </p>
-            <button
-              onClick={handleOpenStripeDashboard}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-            >
-              <ExternalLink className="w-5 h-5 mr-2" />
-              Otwórz panel zarobków
-            </button>
-          </div>
-
-          {/* Link do strony napiwków */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-center mb-4">
-              <ExternalLink className="w-12 h-12 text-green-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-center mb-4">
+        <div className="border-t pt-6">
+          <div className="text-center">
+            <h4 className="font-semibold text-gray-900 mb-4">
               Twoja strona do napiwków
-            </h3>
-            <p className="text-sm text-gray-600 text-center mb-4">
-              Udostępnij ten link klientom, aby mogli zostawić Ci napiwek
-            </p>
+            </h4>
             <button
-              onClick={() => window.open(getTipPageUrl(), '_blank')}
-              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
+              onClick={handleTipPageOpen}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <ExternalLink className="w-5 h-5 mr-2" />
-              Otwórz stronę napiwków
+              <span className="mr-2">Otwórz stronę napiwków</span>
+              <ExternalLink className="w-4 h-4" />
             </button>
+            <p className="text-sm text-gray-500 mt-2">
+              Kliknij aby otworzyć stronę do napiwków w nowym oknie
+            </p>
           </div>
         </div>
       )}
+
+      {/* Historia napiwków */}
+      <div className="border-t pt-6">
+        <h4 className="font-semibold text-gray-900 mb-4 text-center">
+          Historia napiwków
+        </h4>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Data
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Kwota
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tipHistory.map((tip) => (
+                  <tr key={tip.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {tip.date.toLocaleDateString('pl-PL', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })} {tip.date.toLocaleTimeString('pl-PL', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      {tip.amount.toFixed(2)} zł
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* Przycisk wylogowania */}
       <div className="pt-6">
