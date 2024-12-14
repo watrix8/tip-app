@@ -94,6 +94,7 @@ const PaymentForm = ({ onSuccess, onError }: PaymentFormProps) => {
 export default function TipPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
+  const [coverFee, setCoverFee] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -124,8 +125,17 @@ export default function TipPage() {
       .toUpperCase();
   };
 
+  const isAmountSelected = (): boolean => {
+    return selectedAmount !== null || (!!customAmount && Number(customAmount) > 0);
+  };
+
+  const getFinalAmount = (): number => {
+    const baseAmount = selectedAmount || Number(customAmount) || 0;
+    return coverFee ? baseAmount + 1 : baseAmount;
+  };
+
   const handlePayment = async () => {
-    const finalAmount = selectedAmount || Number(customAmount);
+    const finalAmount = getFinalAmount();
     if (!finalAmount || finalAmount <= 0 || !waiter) {
       setPaymentError('Proszę wybrać lub wpisać kwotę napiwku');
       return;
@@ -241,12 +251,25 @@ export default function TipPage() {
               />
             </div>
 
+            <div className="mb-6">
+              <label className="flex items-center space-x-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={coverFee}
+                  onChange={(e) => setCoverFee(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span>Pokryj koszty transakcji (+1 PLN)</span>
+              </label>
+            </div>
+
             <button
               onClick={handlePayment}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+              disabled={!isAmountSelected()}
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-5 h-5 mr-2" />
-              Zapłać {(selectedAmount || Number(customAmount) || 0).toFixed(2)} PLN
+              Zapłać {getFinalAmount().toFixed(2)} PLN
             </button>
           </>
         ) : (
