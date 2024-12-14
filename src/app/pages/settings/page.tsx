@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
 import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
-import SettingsPage from '@/app/components/SettingsPage';
+import SettingsPage from '@/app/components/waitier/SettingsPage';
 import type { UserData } from '@/app/types/user';
 import { useRouter } from 'next/navigation';
 

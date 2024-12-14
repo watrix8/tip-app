@@ -1,21 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import LoginButton from '@/app/components/LoginButton';
-import RegisterForm from '@/app/components/RegisterForm';
 import { useRouter } from 'next/navigation';
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
-  getDocs
-} from 'firebase/firestore';
+import { useAuth } from '@/app/contexts/AuthContext';
+import LoginButton from '@/app/components/auth/LoginButton';
+import RegisterForm from '@/app/components/auth/RegisterForm';
 import dynamic from 'next/dynamic';
 
-const WaiterPanel = dynamic(() => import('@/app/components/WaiterPanel'), {
+const WaiterPanel = dynamic(() => import('@/app/pages/waiter-panel/WaiterPanel'), {
   ssr: false
 });
   
@@ -28,74 +20,37 @@ interface User {
 }
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  const { user, loading, logout } = useAuth(); // Wyciągamy logout z useAuth na poziomie komponentu
   const [showRegister, setShowRegister] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId'); // Sprawdzamy, czy użytkownik jest zapisany w localStorage
-    if (userId) {
-      // Pobieramy dane użytkownika z Firestore
-      getDoc(doc(getFirestore(), 'Users', userId)).then((docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data() as User;
-          setCurrentUser({
-            ...userData,
-            id: docSnap.id
-          });
-          setIsLoggedIn(true); // Użytkownik zalogowany
-        } else {
-          setIsLoggedIn(false); // Jeśli użytkownik nie istnieje w bazie
-          setCurrentUser(null);
-        }
+    if (!loading && user) {
+      setCurrentUser({
+        id: user.uid,
+        name: user.displayName || '',
+        email: user.email || '',
+        restaurantId: '',
+        avatarUrl: user.photoURL || ''
       });
-    } else {
-      setIsLoggedIn(false); // Brak danych użytkownika w localStorage
-      setCurrentUser(null);
     }
-  }, []);
+  }, [user, loading]);
 
-  const handleLogin = async (email: string, password: string) => {
-    const q = query(
-      collection(getFirestore(), 'Users'),
-      where('email', '==', email),
-      where('password', '==', password)
-    );
-  
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      const docSnapshot = querySnapshot.docs[0];
-      const data = docSnapshot.data();
-  
-      const userData: User = {
-        id: docSnapshot.id,
-        name: data.name || '',
-        email: data.email || '',
-        restaurantId: data.restaurantId || '',
-        avatarUrl: data.avatarUrl || ''
-      };
-  
-      setCurrentUser(userData);
-      setIsLoggedIn(true);
-      localStorage.setItem('userId', userData.id);
+  const handleLogout = async () => {
+    try {
+      await logout(); // Używamy logout z kontekstu
+      setCurrentUser(null);
       router.push('/');
-    } else {
-      alert('Nieprawidłowy email lub hasło');
+    } catch (error) {
+      console.error('Błąd wylogowania:', error);
     }
-  };
-  
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    localStorage.removeItem('userId');
-    router.push('/');
   };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
-        {isLoggedIn ? (
+        {currentUser ? (
           <WaiterPanel onLogout={handleLogout} currentUser={currentUser} />
         ) : showRegister ? (
           <RegisterForm onBackToLogin={() => setShowRegister(false)} />
@@ -106,7 +61,7 @@ export default function Home() {
               <p className="text-gray-500 mt-2">System napiwków dla kelnerów</p>
             </div>
             <div className="space-y-6">
-              <LoginButton onLogin={handleLogin} />
+              <LoginButton />
               <button
                 onClick={() => setShowRegister(true)}
                 className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"

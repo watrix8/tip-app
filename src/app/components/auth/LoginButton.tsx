@@ -1,23 +1,23 @@
+// src/app/components/auth/LoginButton.tsx
 'use client';
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
+import { useAuth } from '@/app/contexts/AuthContext';
 
-interface LoginButtonProps {
-  onLogin: (email: string, password: string) => Promise<void>;
-}
+// Usuwamy interfejs LoginButtonProps, bo nie potrzebujemy już propsów
 
-export default function LoginButton({ onLogin }: LoginButtonProps) {
+export default function LoginButton() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Resetujemy wcześniejszy błąd
+    setError('');
     try {
-      console.log('Próba logowania z:', email);
-      await onLogin(email, password); // Wywołujemy funkcję z propsów
+      await login(email, password);
       console.log('Logowanie udane');
     } catch (err) {
       console.error('Błąd logowania:', err);

@@ -5,29 +5,31 @@ import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
+import { useAuth } from '@/app/contexts/AuthContext'; // Dodajemy import useAuth
 import type { SettingsPageProps } from '@/app/types/user';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
-  console.log('[SettingsPage] Received currentUser:', {
-    id: currentUser?.id,
-    email: currentUser?.email
-  });
   const router = useRouter();
+  const { user } = useAuth(); // Dodajemy destrukturyzację user z useAuth
   const [name, setName] = useState(currentUser?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Sprawdzamy czy currentUser.id zgadza się z zalogowanym użytkownikiem
   useEffect(() => {
-    console.log('Current user data in SettingsPage:', currentUser);
-    if (currentUser?.name) {
-      setName(currentUser.name);
+    if (currentUser?.id !== user?.uid) {
+      console.error('Unauthorized access attempt');
+      router.push('/');
     }
-    if (currentUser?.avatarUrl) {
-      setAvatarUrl(currentUser.avatarUrl);
+  }, [currentUser?.id, user?.uid, router]);
+
+  useEffect(() => {
+    if (currentUser?.id !== user?.uid) {
+      router.push('/');
     }
-  }, [currentUser]);
+  }, [currentUser, user, router]);
 
   const handleGoBack = () => {
     router.back();
