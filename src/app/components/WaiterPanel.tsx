@@ -2,6 +2,9 @@ import { LogOut, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
 import { auth } from '@/app/config/firebase';
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
+
 //import StripeExpressDashboard from './dashboard/StripeExpressDashboard';
 
 interface WaiterPanelProps {
@@ -188,6 +191,14 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
           </div>
         </div>
       </div>
+
+      <Link 
+  href="/settings"
+  className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+>
+  <Settings className="w-5 h-5 mr-2" />
+  Ustawienia
+</Link>
 
       {/* Przycisk wylogowania */}
       <div className="pt-6">
