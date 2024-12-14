@@ -1,9 +1,7 @@
-'use client';
-
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
-import { addUser } from '@/app/utils/firebaseUtils';  // Importujemy nową funkcję addUser
+import { addUser } from '@/app/utils/firebaseUtils';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -11,12 +9,11 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    name: '',
-    restaurantId: '',
-    avatarUrl: ''
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
 
@@ -29,23 +26,18 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     }
   
     try {
-      // Próba rejestracji użytkownika
-      console.log("Próba rejestracji:", formData.email);
-      // Tu powinieneś dodać logikę do rejestracji, jeśli nie masz jej w innej funkcji.
-      
-      // Dodajemy użytkownika do bazy danych
       await addUser(
-        formData.name,
+        `${formData.firstName} ${formData.lastName}`, // Łączymy imię i nazwisko
         formData.email,
-        formData.password,  // Pamiętaj, by nie przechowywać hasła w czystej postaci w prawdziwej aplikacji!
-        formData.restaurantId,
-        formData.avatarUrl
+        formData.password,
+        '', // Usunęliśmy restaurantId
+        '' // Usunęliśmy avatarUrl
       );
       
       alert('Rejestracja udana! Możesz się teraz zalogować.');
       onBackToLogin();
     } catch (error: FirebaseError | unknown) {
-      console.error("Szczegóły błędu rejestracji:", error);
+      console.error("Błąd rejestracji:", error);
       if (error instanceof FirebaseError) {
         if (error.code === 'auth/email-already-in-use') {
           setError('Ten adres email jest już zajęty');
@@ -62,14 +54,25 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        type="text"
-        placeholder="Imię"
-        value={formData.name}
-        onChange={(e) => setFormData({...formData, name: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-        required
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <input
+          type="text"
+          placeholder="Imię"
+          value={formData.firstName}
+          onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+          className="w-full p-2 border rounded-lg"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Nazwisko"
+          value={formData.lastName}
+          onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+          className="w-full p-2 border rounded-lg"
+          required
+        />
+      </div>
+      
       <input
         type="email"
         placeholder="Email"
@@ -78,6 +81,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         className="w-full p-2 border rounded-lg"
         required
       />
+      
       <input
         type="password"
         placeholder="Hasło"
@@ -86,6 +90,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         className="w-full p-2 border rounded-lg"
         required
       />
+      
       <input
         type="password"
         placeholder="Potwierdź hasło"
@@ -94,23 +99,11 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         className="w-full p-2 border rounded-lg"
         required
       />
-      <input
-        type="text"
-        placeholder="Id restauracji"
-        value={formData.restaurantId}
-        onChange={(e) => setFormData({...formData, restaurantId: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-      />
-      <input
-        type="text"
-        placeholder="URL awatara"
-        value={formData.avatarUrl}
-        onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-      />
+
       {error && (
         <p className="text-red-500 text-sm text-center">{error}</p>
       )}
+      
       <button 
         type="submit"
         className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
@@ -118,6 +111,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
         <UserPlus className="w-5 h-5 mr-2" />
         Zarejestruj się
       </button>
+      
       <button
         type="button"
         onClick={onBackToLogin}

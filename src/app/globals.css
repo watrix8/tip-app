@@ -19,3 +19,19 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Globalne style dla inputów */
+@layer base {
+  input {
+    @apply text-gray-900;
+  }
+  
+  input::placeholder {
+    @apply text-gray-500;
+  }
+
+  /* Zachowuj kolor tekstu dla inputów typu checkbox */
+  input[type="checkbox"] {
+    @apply text-blue-600;
+  }
+}

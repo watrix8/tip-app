@@ -1,17 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, X } from 'lucide-react';
 
 export default function PaymentSuccessPage() {
-  useEffect(() => {
-    // Po 3 sekundach przekieruj do strony głównej
-    const timer = setTimeout(() => {
-      window.location.href = '/';
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const handleClose = () => {
+    window.close();
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -20,12 +14,16 @@ export default function PaymentSuccessPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Dziękujemy za napiwek!
         </h1>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 mb-6">
           Twoja płatność została zrealizowana pomyślnie.
         </p>
-        <div className="text-sm text-gray-500">
-          Za chwilę nastąpi przekierowanie...
-        </div>
+        <button
+          onClick={handleClose}
+          className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Zamknij okno
+        </button>
       </div>
     </main>
   );
