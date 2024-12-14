@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
-import { loadStripe, StripeError } from '@stripe/stripe-js';
+import { StripeError } from '@stripe/stripe-js';
 import { 
   Elements, 
   useStripe, 
@@ -12,10 +12,10 @@ import {
   PaymentElement 
 } from '@stripe/react-stripe-js';
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
+import { getStripe } from '@/app/utils/stripeUtils';
 
-// Initialize Stripe with public key from environment variable
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
+// Używamy funkcji getStripe z naszych utils
+const stripePromise = getStripe();
 
 interface Waiter {
   name: string;

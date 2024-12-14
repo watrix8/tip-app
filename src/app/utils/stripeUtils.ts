@@ -2,7 +2,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
 import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
 
-// Stałe dla statusów onboardingu
 export const STRIPE_ONBOARDING_STATUS = {
   PENDING: 'pending',
   COMPLETED: 'completed',
@@ -11,12 +10,18 @@ export const STRIPE_ONBOARDING_STATUS = {
 
 let stripePromise: Promise<Stripe | null>;
 
-const getStripe = () => {
+export const getStripe = () => {
   if (!stripePromise) {
-    stripePromise = loadStripe('pk_test_51PcaqcEkSyI14zZVh7CYtUq6mGQrd6r1xSRrlfxExVg3BaIJkOfGYLQ5kSewrQldmu0nddVccFXgzMcyFGgPHpgv00b3kXldMS');
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!key) {
+      console.error('Missing Stripe Publishable Key');
+      return null;
+    }
+    stripePromise = loadStripe(key);
   }
   return stripePromise;
 };
+
 
 // Inicjalizacja procesu onboardingu dla kelnera
 export const initializeStripeConnect = async (waiterId: string) => {
