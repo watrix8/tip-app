@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
-import { StripeError } from '@stripe/stripe-js';
+import { loadStripe, StripeError } from '@stripe/stripe-js';
 import { 
   Elements, 
   useStripe, 
@@ -12,10 +12,17 @@ import {
   PaymentElement 
 } from '@stripe/react-stripe-js';
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
-import { getStripe } from '@/app/utils/stripeUtils';
 
-// Używamy funkcji getStripe z naszych utils
-const stripePromise = getStripe();
+// Debug logs
+console.log('Environment check in TipPage:', {
+  stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+  nodeEnv: process.env.NODE_ENV
+});
+
+// Initialize Stripe with fallback
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51PcaqcEkSyI14zZVh7CYtUq6mGQrd6r1xSRrlfxExVg3BaIJkOfGYLQ5kSewrQldmu0nddVccFXgzMcyFGgPHpgv00b3kXldMS';
+const stripePromise = loadStripe(stripeKey);
 
 interface Waiter {
   name: string;

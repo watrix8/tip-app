@@ -13,15 +13,17 @@ let stripePromise: Promise<Stripe | null>;
 export const getStripe = () => {
   if (!stripePromise) {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    console.log('Environment variables available:', process.env); // Debug log
+    console.log('Stripe key:', key); // Debug log
+    
     if (!key) {
-      console.error('Missing Stripe Publishable Key');
+      console.error('Missing Stripe Publishable Key. Please check your .env.local file');
       return null;
     }
     stripePromise = loadStripe(key);
   }
   return stripePromise;
 };
-
 
 // Inicjalizacja procesu onboardingu dla kelnera
 export const initializeStripeConnect = async (waiterId: string) => {
