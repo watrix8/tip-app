@@ -14,10 +14,10 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Resetujemy wcześniejszy błąd
+    setError('');
     try {
       console.log('Próba logowania z:', email);
-      await onLogin(email, password); // Wywołujemy funkcję z propsów
+      await onLogin(email, password);
       console.log('Logowanie udane');
     } catch (err) {
       console.error('Błąd logowania:', err);
@@ -32,7 +32,10 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-2 border rounded-lg"
+        className="w-full border border-[var(--neutral)] rounded-lg p-2 
+                   focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent
+                   bg-white dark:bg-[var(--primary-dark)]
+                   text-[var(--deep)] dark:text-white"
         required
       />
       <input
@@ -40,15 +43,21 @@ export default function LoginButton({ onLogin }: LoginButtonProps) {
         placeholder="Hasło"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full p-2 border rounded-lg"
+        className="w-full border border-[var(--neutral)] rounded-lg p-2 
+                   focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent
+                   bg-white dark:bg-[var(--primary-dark)]
+                   text-[var(--deep)] dark:text-white"
         required
       />
       {error && (
-        <p className="text-red-500 text-sm text-center">{error}</p>
+        <p className="text-[var(--error)] text-sm text-center">{error}</p>
       )}
       <button 
         type="submit"
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+        className="w-full bg-[var(--primary)] text-[var(--primary-dark)] 
+                   hover:bg-[var(--primary-hover)] py-3 px-4 rounded-lg 
+                   flex items-center justify-center transition-colors
+                   font-medium"
       >
         <LogIn className="w-5 h-5 mr-2" />
         Zaloguj się
