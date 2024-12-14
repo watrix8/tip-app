@@ -19,45 +19,52 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
   });
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // RegisterForm.tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
-      setError('Hasła się nie zgadzają');
-      return;
-    }
-  
-    try {
-      // Najpierw tworzymy użytkownika w Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+  if (formData.password !== formData.confirmPassword) {
+    setError('Hasła się nie zgadzają');
+    return;
+  }
 
-      // Następnie tworzymy dokument użytkownika w Firestore
-      await createOrUpdateUser(userCredential.user.uid, {
-        email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
-      });
-      
-      alert('Rejestracja udana! Możesz się teraz zalogować.');
-      onBackToLogin();
-    } catch (error: FirebaseError | unknown) {
-      console.error("Błąd rejestracji:", error);
-      if (error instanceof FirebaseError) {
-        if (error.code === 'auth/email-already-in-use') {
-          setError('Ten adres email jest już zajęty');
-        } else if (error.code === 'auth/weak-password') {
-          setError('Hasło jest za słabe - minimum 6 znaków');
-        } else {
-          setError('Błąd rejestracji: ' + error.message);
-        }
+  try {
+    console.log('Rozpoczynam rejestrację:', formData.email);
+    
+    // Najpierw tworzymy użytkownika w Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      formData.email,
+      formData.password
+    );
+
+    console.log('Użytkownik utworzony w Auth:', userCredential.user.uid);
+
+    // Następnie tworzymy dokument użytkownika w Firestore
+    await createOrUpdateUser(userCredential.user.uid, {
+      email: formData.email,
+      name: `${formData.firstName} ${formData.lastName}`,
+    });
+    
+    console.log('Dokument użytkownika utworzony w Firestore');
+    
+    alert('Rejestracja udana! Możesz się teraz zalogować.');
+    onBackToLogin();
+  } catch (error) {
+    console.error("Błąd rejestracji:", error);
+    if (error instanceof FirebaseError) {
+      if (error.code === 'auth/email-already-in-use') {
+        setError('Ten adres email jest już zajęty');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Hasło jest za słabe - minimum 6 znaków');
       } else {
-        setError('Wystąpił nieoczekiwany błąd');
+        setError('Błąd rejestracji: ' + error.message);
       }
+    } else {
+      setError('Wystąpił nieoczekiwany błąd');
     }
-  };
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

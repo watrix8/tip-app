@@ -1,11 +1,11 @@
-// src/app/components/auth/LoginButton.tsx
 'use client';
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
+import { auth } from '@/app/config/firebase';
 import { useAuth } from '@/app/contexts/AuthContext';
-
-// Usuwamy interfejs LoginButtonProps, bo nie potrzebujemy już propsów
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
@@ -17,11 +17,28 @@ export default function LoginButton() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
+      console.log('Próba logowania dla:', email);
+      await signInWithEmailAndPassword(auth, email, password);
       console.log('Logowanie udane');
     } catch (err) {
-      console.error('Błąd logowania:', err);
-      setError('Nieprawidłowy email lub hasło');
+      console.error('Szczegóły błędu logowania:', err);
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case 'auth/invalid-credential':
+            setError('Nieprawidłowy email lub hasło');
+            break;
+          case 'auth/user-not-found':
+            setError('Użytkownik nie istnieje');
+            break;
+          case 'auth/wrong-password':
+            setError('Nieprawidłowe hasło');
+            break;
+          default:
+            setError(`Błąd logowania: ${err.message}`);
+        }
+      } else {
+        setError('Wystąpił nieoczekiwany błąd');
+      }
     }
   };
 
