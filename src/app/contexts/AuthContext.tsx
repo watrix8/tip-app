@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/app/config/firebase';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -20,33 +21,58 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+const PROTECTED_ROUTES = ['/settings', '/waiter-panel'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Najpierw czyścimy localStorage z potencjalnych pozostałości
-    localStorage.removeItem('firebase:authUser');
-    localStorage.removeItem('firebase:previousAuthUser');
+    console.log('[AuthContext] Initializing with path:', pathname);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('[AuthContext] Auth state changed:', {
         userId: firebaseUser?.uid,
-        email: firebaseUser?.email
+        email: firebaseUser?.email,
+        currentPath: pathname
       });
+
+      // Sprawdź czy jesteśmy na chronionej ścieżce
+      const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route));
+
+      if (!firebaseUser && isProtectedRoute) {
+        console.log('[AuthContext] No user on protected route, redirecting to login');
+        router.push('/login');
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
       if (firebaseUser) {
         // Sprawdzamy czy użytkownik faktycznie istnieje w Firestore
         const db = getFirestore();
-        const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
-        
-        if (!userDoc.exists()) {
-          // Jeśli nie ma dokumentu użytkownika, wylogowujemy
-          console.log('[AuthContext] User document not found, signing out');
-          await signOut(auth);
+        try {
+          const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
+          
+          if (!userDoc.exists()) {
+            console.log('[AuthContext] User document not found, signing out');
+            await signOut(auth);
+            setUser(null);
+            if (isProtectedRoute) {
+              router.push('/login');
+            }
+          } else {
+            console.log('[AuthContext] User document found:', userDoc.data());
+            setUser(firebaseUser);
+          }
+        } catch (error) {
+          console.error('[AuthContext] Error checking user document:', error);
           setUser(null);
-        } else {
-          setUser(firebaseUser);
+          if (isProtectedRoute) {
+            router.push('/login');
+          }
         }
       } else {
         setUser(null);
@@ -58,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [pathname, router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -77,9 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
-      // Czyścimy wszystkie dane użytkownika
       setUser(null);
-      localStorage.clear(); // Czyścimy cały localStorage
+      router.push('/login');
       console.log('[AuthContext] Logout successful');
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);

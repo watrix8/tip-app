@@ -14,22 +14,42 @@ import { db } from '@/app/config/firebase';
 import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
 import SettingsPage from '@/app/components/SettingsPage';
 import type { UserData } from '@/app/types/user';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPageWrapper() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    console.log('[SettingsPageWrapper] Initial render:', {
+      isAuthLoading: loading,
+      authUser: user,
+      currentUserData: userData,
+      isPageLoading: isLoading
+    });
+
+    // Jeśli auth jeszcze się ładuje, czekamy
+    if (loading) {
+      console.log('[SettingsPageWrapper] Auth is still loading...');
+      return;
+    }
+
+    // Jeśli nie ma użytkownika po załadowaniu auth, przekieruj do logowania
+    if (!loading && !user) {
+      console.log('[SettingsPageWrapper] No user after auth loaded, redirecting to login...');
+      router.push('/login');
+      return;
+    }
+
     const fetchUserData = async () => {
-      console.log('Current auth user:', user);
-      
-      console.log('[SettingsPageWrapper] Starting fetchUserData', {
+      console.log('[SettingsPageWrapper] Starting fetchUserData:', {
         authUserId: user?.uid,
         authUserEmail: user?.email
       });
-
+      
       if (!user?.uid) {
         setError('Brak zalogowanego użytkownika');
         setIsLoading(false);
@@ -42,11 +62,11 @@ export default function SettingsPageWrapper() {
         const q = query(usersRef, where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
 
-        console.log('[SettingsPageWrapper] Query result:', {
-            empty: querySnapshot.empty,
-            docsCount: querySnapshot.docs.length,
-            firstDocId: querySnapshot.empty ? null : querySnapshot.docs[0]?.id
-          });
+        console.log('[SettingsPageWrapper] Email query result:', {
+          empty: querySnapshot.empty,
+          count: querySnapshot.docs.length,
+          docs: querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        });
 
         if (!querySnapshot.empty) {
           // Znaleziono istniejący dokument
@@ -56,10 +76,11 @@ export default function SettingsPageWrapper() {
             ...existingDoc.data()
           } as UserData;
           
-          console.log('Found existing user document:', data);
+          console.log('[SettingsPageWrapper] Found user by email:', data);
           setUserData(data);
         } else {
           // 2. Jeśli nie znaleziono po email, spróbuj po Auth ID
+          console.log('[SettingsPageWrapper] Trying to find user by Auth ID:', user.uid);
           const directRef = doc(db, 'Users', user.uid);
           const directSnap = await getDoc(directRef);
 
@@ -69,11 +90,11 @@ export default function SettingsPageWrapper() {
               ...directSnap.data()
             } as UserData;
             
-            console.log('Found user document by Auth ID:', data);
+            console.log('[SettingsPageWrapper] Found user by Auth ID:', data);
             setUserData(data);
           } else {
+            console.log('[SettingsPageWrapper] User document not found, creating new one');
             // 3. Jeśli nie znaleziono, utwórz nowy dokument
-            console.log('Creating new user document');
             await createOrUpdateUser(user.uid, {
               email: user.email || '',
               name: user.displayName || 'Nowy Użytkownik'
@@ -85,16 +106,12 @@ export default function SettingsPageWrapper() {
               ...newUserDoc.data()
             } as UserData;
             
-            console.log('[SettingsPageWrapper] Final userData:', {
-                id: data.id,
-                email: data.email
-              });
-            console.log('Created new user document:', data);
+            console.log('[SettingsPageWrapper] Created new user document:', data);
             setUserData(data);
           }
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('[SettingsPageWrapper] Error:', error);
         setError('Wystąpił błąd podczas pobierania danych');
       } finally {
         setIsLoading(false);
@@ -104,9 +121,9 @@ export default function SettingsPageWrapper() {
     if (user) {
       fetchUserData();
     }
-  }, [user]);
+  }, [user, loading, router]);
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
