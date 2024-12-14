@@ -13,7 +13,6 @@ import {
 } from '@stripe/react-stripe-js';
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
 
-// Initialize Stripe
 const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
 
 interface Waiter {
@@ -25,10 +24,10 @@ interface Waiter {
 interface PaymentFormProps {
   onSuccess: () => void;
   onError: (error: StripeError | Error) => void;
+  termsAccepted: boolean;
 }
 
-// Payment Form Component
-const PaymentForm = ({ onSuccess, onError }: PaymentFormProps) => {
+const PaymentForm = ({ onSuccess, onError, termsAccepted }: PaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +35,7 @@ const PaymentForm = ({ onSuccess, onError }: PaymentFormProps) => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !termsAccepted) return;
 
     setProcessing(true);
     setError(null);
@@ -81,7 +80,7 @@ const PaymentForm = ({ onSuccess, onError }: PaymentFormProps) => {
       
       <button
         type="submit"
-        disabled={!stripe || processing}
+        disabled={!stripe || processing || !termsAccepted}
         className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50"
       >
         <CreditCard className="w-5 h-5 mr-2" />
@@ -95,6 +94,7 @@ export default function TipPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -136,8 +136,8 @@ export default function TipPage() {
 
   const handlePayment = async () => {
     const finalAmount = getFinalAmount();
-    if (!finalAmount || finalAmount <= 0 || !waiter) {
-      setPaymentError('Proszę wybrać lub wpisać kwotę napiwku');
+    if (!finalAmount || finalAmount <= 0 || !waiter || !termsAccepted) {
+      setPaymentError('Proszę wybrać kwotę napiwku i zaakceptować regulamin');
       return;
     }
 
@@ -263,9 +263,24 @@ export default function TipPage() {
               </label>
             </div>
 
+            <div className="mb-6">
+              <label className="flex items-start space-x-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-1 rounded border-gray-300"
+                />
+                <span>
+                  Akceptuję <a href="/regulamin" target="_blank" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz 
+                  wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji usługi
+                </span>
+              </label>
+            </div>
+
             <button
               onClick={handlePayment}
-              disabled={!isAmountSelected()}
+              disabled={!isAmountSelected() || !termsAccepted}
               className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-5 h-5 mr-2" />
@@ -277,6 +292,7 @@ export default function TipPage() {
             <PaymentForm
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
+              termsAccepted={termsAccepted}
             />
           </Elements>
         )}
