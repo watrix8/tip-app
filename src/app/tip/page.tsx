@@ -3,20 +3,126 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, CreditCard } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 interface Waiter {
   name: string;
   id: string;
 }
 
+interface PaymentFormProps {
+  amount: number;
+  waiterId: string;
+  onError: (message: string) => void;
+}
+
+// Komponent formularza płatności
+const PaymentForm: React.FC<PaymentFormProps> = ({ amount, waiterId, onError }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      // Utwórz PaymentIntent
+      const response = await fetch('/api/stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-payment-intent',
+          amount,
+          waiterId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Błąd podczas inicjowania płatności');
+      }
+
+      const { clientSecret } = await response.json();
+
+      if (!clientSecret) {
+        throw new Error('Brak wymaganych danych do realizacji płatności');
+      }
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement)!,
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        window.location.href = '/payment/success';
+      }
+    } catch (error) {
+      onError(error instanceof Error ? error.message : 'Wystąpił błąd podczas przetwarzania płatności');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 border rounded-lg">
+        <CardElement 
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+              invalid: {
+                color: '#9e2146',
+              },
+            },
+          }}
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50"
+      >
+        <CreditCard className="w-5 h-5 mr-2" />
+        {processing ? 'Przetwarzanie...' : `Zapłać ${amount.toFixed(2)} PLN`}
+      </button>
+    </form>
+  );
+};
+
+// Główny komponent strony
 export default function TipPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showTermsError, setShowTermsError] = useState(false);
+  // Usunięto showTermsError, ponieważ używamy disabled na przycisku
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   
   const searchParams = useSearchParams();
   const waiterId = searchParams.get('waiterId');
@@ -52,41 +158,13 @@ export default function TipPage() {
     return coverFee ? baseAmount + 1 : baseAmount;
   };
 
-  const handleSubmit = async () => {
-    if (!termsAccepted) {
-      setShowTermsError(true);
-      return;
-    }
-
+  const handleProceedToPayment = () => {
     if (!isAmountValid()) {
       setErrorMessage('Proszę wybrać lub wpisać kwotę napiwku');
       return;
     }
-
-    setShowTermsError(false);
     setErrorMessage(null);
-
-    try {
-      const response = await fetch('/api/stripe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create-payment-intent',
-          amount: getFinalAmount(),
-          waiterId: waiter?.id,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Błąd podczas inicjowania płatności');
-      }
-
-      const data = await response.json();
-      window.location.href = data.checkoutUrl;
-    } catch (error) {
-      console.error('Payment error:', error);
-      setErrorMessage('Wystąpił błąd podczas przetwarzania płatności. Spróbuj ponownie później.');
-    }
+    setShowPaymentForm(true);
   };
 
   if (!waiter) {
@@ -100,7 +178,6 @@ export default function TipPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
-        {/* Waiter Avatar and Name */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-blue-100">
@@ -112,99 +189,101 @@ export default function TipPage() {
           <h1 className="text-2xl font-bold text-gray-900">Napiwek dla: {waiter.name}</h1>
         </div>
 
-        <div className="space-y-6">
-          {/* Preset Amounts */}
-          <div className="grid grid-cols-3 gap-4">
-            {tipAmounts.map((amount) => (
-              <button
-                key={amount}
-                onClick={() => {
-                  setSelectedAmount(amount);
-                  setCustomAmount('');
-                  setErrorMessage(null);
-                }}
-                className={`p-4 rounded-lg text-center ${
-                  selectedAmount === amount 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                <div className="font-bold">{amount} PLN</div>
-              </button>
-            ))}
-          </div>
+        {!showPaymentForm ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              {tipAmounts.map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => {
+                    setSelectedAmount(amount);
+                    setCustomAmount('');
+                    setErrorMessage(null);
+                  }}
+                  className={`p-4 rounded-lg text-center ${
+                    selectedAmount === amount 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="font-bold">{amount} PLN</div>
+                </button>
+              ))}
+            </div>
 
-          {/* Custom Amount Input */}
-          <input
-            type="number"
-            placeholder="Wpisz własną kwotę"
-            value={customAmount}
-            onChange={(e) => {
-              setCustomAmount(e.target.value);
-              setSelectedAmount(null);
-              setErrorMessage(null);
-            }}
-            className="w-full p-3 border rounded-lg"
-            min="0"
-            step="0.01"
-          />
-
-          {/* Transaction Fee Checkbox */}
-          <label className="flex items-center space-x-2 text-sm text-gray-600">
             <input
-              type="checkbox"
-              checked={coverFee}
-              onChange={(e) => setCoverFee(e.target.checked)}
-              className="rounded border-gray-300"
+              type="number"
+              placeholder="Wpisz własną kwotę"
+              value={customAmount}
+              onChange={(e) => {
+                setCustomAmount(e.target.value);
+                setSelectedAmount(null);
+                setErrorMessage(null);
+              }}
+              className="w-full p-3 border rounded-lg"
+              min="0"
+              step="0.01"
             />
-            <span>Pokryj koszty transakcji (+1 PLN)</span>
-          </label>
 
-          {/* Terms Acceptance */}
-          <div className="space-y-2">
-            <label className="flex items-start space-x-2 text-sm text-gray-600">
+            <label className="flex items-center space-x-2 text-sm text-gray-600">
               <input
                 type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => {
-                  setTermsAccepted(e.target.checked);
-                  if (e.target.checked) {
-                    setShowTermsError(false);
-                  }
-                }}
-                className="mt-1 rounded border-gray-300"
+                checked={coverFee}
+                onChange={(e) => setCoverFee(e.target.checked)}
+                className="rounded border-gray-300"
               />
-              <span>
-                Akceptuję <a href="/regulamin" target="_blank" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz 
-                wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji usługi przekazania napiwku
-              </span>
+              <span>Pokryj koszty transakcji (+1 PLN)</span>
             </label>
-            
-            {showTermsError && (
-              <div className="flex items-center space-x-2 text-red-600 text-sm">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Musisz zaakceptować regulamin aby kontynuować</span>
+
+            <div className="space-y-2">
+              <label className="flex items-start space-x-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => {
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) {
+                      setShowTermsError(false);
+                    }
+                  }}
+                  className="mt-1 rounded border-gray-300"
+                />
+                <span>
+                  Akceptuję <a href="/regulamin" target="_blank" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz 
+                  wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji usługi przekazania napiwku
+                </span>
+              </label>
+              
+              {/* Usunięto komunikat o błędzie niezaakceptowanego regulaminu */}
+            </div>
+
+            {errorMessage && (
+              <div className="text-red-600 text-sm text-center">
+                {errorMessage}
               </div>
             )}
+
+            <button
+              onClick={handleProceedToPayment}
+              disabled={!isAmountValid() || !termsAccepted}
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CreditCard className="w-5 h-5 mr-2" />
+              Zapłać {getFinalAmount().toFixed(2)} PLN
+            </button>
           </div>
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="text-red-600 text-sm text-center">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={!isAmountValid()}
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <CreditCard className="w-5 h-5 mr-2" />
-            Zapłać {getFinalAmount().toFixed(2)} PLN
-          </button>
-        </div>
+        ) : (
+          <Elements stripe={stripePromise}>
+            <PaymentForm 
+              amount={getFinalAmount()}
+              waiterId={waiter.id}
+              onError={(message) => {
+                setErrorMessage(message);
+                setShowPaymentForm(false);
+              }}
+            />
+          </Elements>
+        )}
       </div>
     </main>
   );
