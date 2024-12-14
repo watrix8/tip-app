@@ -80,7 +80,6 @@ async function handlePaymentIntent(amount: number, waiterId: string, stripeAccou
         payment_method_types: [
           'card',
           'blik',
-          'p24'         // Przelewy24
         ],
         application_fee_amount: Math.round(amount * 0.05 * 100), // 5% prowizji
         transfer_data: {

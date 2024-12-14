@@ -66,23 +66,25 @@ export default function TipPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'create-checkout-session',
+          action: 'create-payment-intent',
           amount: getFinalAmount(),
           waiterId: waiter?.id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Błąd podczas inicjowania płatności');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Błąd podczas inicjowania płatności');
       }
 
       const data = await response.json();
       
-      if (!data.url) {
-        throw new Error('Brak URL do strony płatności');
+      if (!data.clientSecret) {
+        throw new Error('Brak wymaganych danych do realizacji płatności');
       }
 
-      window.location.href = data.url;
+      // Przekieruj do Stripe Payment Element z otrzymanym clientSecret
+      window.location.href = `https://checkout.stripe.com/c/pay/${data.clientSecret}`;
     } catch (error) {
       console.error('Payment error:', error);
       setErrorMessage('Wystąpił błąd podczas przetwarzania płatności. Spróbuj ponownie później.');
