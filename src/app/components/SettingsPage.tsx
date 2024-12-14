@@ -28,9 +28,12 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (currentUser) {
+    console.log('Current user data in SettingsPage:', currentUser);
+    if (currentUser?.name) {
       setName(currentUser.name);
-      setAvatarUrl(currentUser.avatarUrl || '');
+    }
+    if (currentUser?.avatarUrl) {
+      setAvatarUrl(currentUser.avatarUrl);
     }
   }, [currentUser]);
 

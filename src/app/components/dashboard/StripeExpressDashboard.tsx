@@ -1,188 +1,144 @@
-'use client';
+// components/dashboard/StripeExpressDashboard.tsx
+import { useState, useEffect } from 'react';
+import { AlertCircle, ExternalLink, LineChart } from 'lucide-react';
+import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/app/config/firebase';
-
-interface SettingsPageProps {
-  currentUser: {
-    id?: string;
-    name: string;
-    email: string;
-    avatarUrl?: string;
-    restaurantId?: string;
-    stripeAccountId?: string;
-    stripeOnboardingStatus?: string;
-    stripeOnboardingTimestamp?: string;
-  } | null;
+interface StripeExpressDashboardProps {
+  userId: string;
+  userName: string;
 }
 
-export default function SettingsPage({ currentUser }: SettingsPageProps) {
-  const router = useRouter();
-  const [name, setName] = useState(currentUser?.name || '');
-  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
+export default function StripeExpressDashboard({ userId, userName }: StripeExpressDashboardProps) {
+  const [isStripeEnabled, setIsStripeEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stripeDashboardUrl, setStripeDashboardUrl] = useState('');
+
+  // Hook sprawdzający status Stripe i pobierający URL do dashboardu
   useEffect(() => {
-    console.log('Current user data in SettingsPage:', currentUser);
-    if (currentUser?.name) {
-      setName(currentUser.name);
+    async function checkStripeEnabled() {
+      try {
+        setIsLoading(true);
+        const status = await checkStripeAccountStatus(userId);
+        setIsStripeEnabled(status);
+        
+        if (status) {
+          // Pobierz URL do Stripe Express Dashboard
+          const response = await fetch('/api/stripe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'create-login-link',
+              userId: userId
+            })
+          });
+          
+          if (response.ok) {
+            const { url } = await response.json();
+            setStripeDashboardUrl(url);
+          }
+        }
+      } catch (error) {
+        console.error('Błąd podczas sprawdzania statusu Stripe:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-    if (currentUser?.avatarUrl) {
-      setAvatarUrl(currentUser.avatarUrl);
-    }
-  }, [currentUser]);
+    
+    checkStripeEnabled();
+  }, [userId]);
 
-  const handleGoBack = () => {
-    router.back();
-  };
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Tutaj w prawdziwej aplikacji należałoby zaimplementować upload do Firebase Storage
-    // Na potrzeby przykładu używamy URL.createObjectURL
-    setAvatarUrl(URL.createObjectURL(file));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser?.id) return;
-
-    setIsLoading(true);
-    setError('');
-
+  // Handler do konfiguracji Stripe
+  const handleStripeSetup = async () => {
     try {
-      const userRef = doc(db, 'Users', currentUser.id);
-      await updateDoc(userRef, {
-        name,
-        avatarUrl
-      });
-
-      // Pokazujemy komunikat o sukcesie i wracamy do panelu
-      alert('Zapisano zmiany!');
-      router.back();
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Wystąpił błąd podczas zapisywania zmian');
-    } finally {
-      setIsLoading(false);
+      await initializeStripeConnect(userId);
+    } catch (error) {
+      console.error('Błąd podczas konfiguracji Stripe:', error);
+      alert('Wystąpił błąd podczas konfiguracji płatności');
     }
   };
+
+  // Handler otwierający dashboard Stripe w nowym oknie
+  const handleOpenStripeDashboard = () => {
+    if (stripeDashboardUrl) {
+      window.open(stripeDashboardUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Generowanie URL strony do napiwków
+  const getTipPageUrl = () => {
+    return `${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${userId}&name=${encodeURIComponent(userName)}`;
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>;
+  }
+
+  if (!isStripeEnabled) {
+    return (
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+        <div className="flex">
+          <AlertCircle className="h-5 w-5 text-yellow-400" />
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-yellow-800">
+              Skonfiguruj odbieranie płatności
+            </h3>
+            <p className="mt-2 text-sm text-yellow-700">
+              Aby móc otrzymywać napiwki, musisz skonfigurować konto Stripe.
+            </p>
+            <button
+              onClick={handleStripeSetup}
+              className="mt-4 bg-yellow-800 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              Skonfiguruj płatności
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Nagłówek z przyciskiem powrotu */}
-        <div className="mb-8 flex items-center">
-          <button
-            onClick={handleGoBack}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-4"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-2xl font-bold">Ustawienia profilu</h1>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Link do Stripe Dashboard */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-center mb-4">
+          <LineChart className="w-12 h-12 text-blue-600" />
         </div>
+        <h3 className="text-lg font-semibold text-center mb-4">
+          Panel zarobków i statystyk
+        </h3>
+        <p className="text-sm text-gray-600 text-center mb-4">
+          Zobacz swoje zarobki, historię transakcji i statystyki w panelu Stripe
+        </p>
+        <button
+          onClick={handleOpenStripeDashboard}
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+        >
+          <ExternalLink className="w-5 h-5 mr-2" />
+          Otwórz panel zarobków
+        </button>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Avatar section */}
-            <div className="flex flex-col items-center space-y-4">
-              <div 
-                onClick={handleAvatarClick}
-                className="relative cursor-pointer group"
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Avatar"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
-                    <User className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Upload className="w-8 h-8 text-white" />
-                </div>
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
-              <p className="text-sm text-gray-500">
-                Kliknij aby zmienić avatar
-              </p>
-            </div>
-
-            {/* Form fields */}
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Imię i nazwisko
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 border rounded-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={currentUser?.email || ''}
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                  disabled
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Email nie może być zmieniony
-                </p>
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm text-center">
-                {error}
-              </div>
-            )}
-
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Zapisywanie...
-                </>
-              ) : (
-                'Zapisz zmiany'
-              )}
-            </button>
-          </form>
+      {/* Link do strony napiwków */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-center mb-4">
+          <ExternalLink className="w-12 h-12 text-green-600" />
         </div>
+        <h3 className="text-lg font-semibold text-center mb-4">
+          Twoja strona do napiwków
+        </h3>
+        <p className="text-sm text-gray-600 text-center mb-4">
+          Udostępnij ten link klientom, aby mogli zostawić Ci napiwek
+        </p>
+        <button
+          onClick={() => window.open(getTipPageUrl(), '_blank')}
+          className="w-full bg-green-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
+        >
+          <ExternalLink className="w-5 h-5 mr-2" />
+          Otwórz stronę napiwków
+        </button>
       </div>
     </div>
   );
