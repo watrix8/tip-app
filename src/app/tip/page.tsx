@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe('pk_test_51PcaqcEkSyI14zZVh7CYtUq6mGQrd6r1xSRrlfxExVg3BaIJkOfGYLQ5kSewrQldmu0nddVccFXgzMcyFGgPHpgv00b3kXldMS');
 
 interface Waiter {
   name: string;
@@ -57,11 +60,16 @@ export default function TipPage() {
       setErrorMessage('Proszę wybrać lub wpisać kwotę napiwku');
       return;
     }
-
+  
     setIsProcessing(true);
     setErrorMessage(null);
-
+  
     try {
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Nie można załadować Stripe');
+      }
+  
       const response = await fetch('/api/stripe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,20 +79,30 @@ export default function TipPage() {
           waiterId: waiter?.id,
         }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Błąd podczas inicjowania płatności');
       }
-
-      const data = await response.json();
+  
+      const { clientSecret } = await response.json();
       
-      if (!data.clientSecret) {
-        throw new Error('Brak wymaganych danych do realizacji płatności');
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: {
+            token: 'tok_visa' // W produkcji będzie to prawdziwa karta
+          },
+        },
+      });
+  
+      if (result.error) {
+        throw result.error;
       }
-
-      // Przekieruj do Stripe Payment Element z otrzymanym clientSecret
-      window.location.href = `https://checkout.stripe.com/c/pay/${data.clientSecret}`;
+  
+      // Sukces
+      setIsProcessing(false);
+      // Przekieruj do strony sukcesu lub pokaż komunikat
+      
     } catch (error) {
       console.error('Payment error:', error);
       setErrorMessage('Wystąpił błąd podczas przetwarzania płatności. Spróbuj ponownie później.');
