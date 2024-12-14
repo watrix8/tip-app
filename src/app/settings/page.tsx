@@ -31,6 +31,8 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) {
@@ -42,7 +44,8 @@ export default function SettingsPage() {
       console.log('Pobieranie danych użytkownika dla UID:', user.uid);
       try {
         const db = getFirestore();
-        const userDocRef = doc(db, 'Users', user.uid);
+        // const userDocRef = doc(db, 'Users', user.uid);
+        const userDocRef = doc(db, 'Users', 'AhFIWeHJQInjUsG9GSwV');
         const userDoc = await getDoc(userDocRef);
 
         console.log('Czy dokument istnieje?', userDoc.exists());
