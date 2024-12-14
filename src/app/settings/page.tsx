@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
 import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
 import SettingsPage from '@/app/components/SettingsPage';
@@ -25,35 +32,51 @@ export default function SettingsPageWrapper() {
       }
 
       try {
-        // Najpierw próbujemy znaleźć dokument bezpośrednio po ID użytkownika
-        const userDocRef = doc(db, 'Users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+        // 1. Najpierw próbujemy znaleźć użytkownika po email
+        const usersRef = collection(db, 'Users');
+        const q = query(usersRef, where('email', '==', user.email));
+        const querySnapshot = await getDocs(q);
 
-        if (userDocSnap.exists()) {
+        if (!querySnapshot.empty) {
+          // Znaleziono istniejący dokument
+          const existingDoc = querySnapshot.docs[0];
           const data = {
-            id: userDocSnap.id,
-            ...userDocSnap.data()
+            id: existingDoc.id,
+            ...existingDoc.data()
           } as UserData;
           
-          console.log('Loaded user data:', data);
+          console.log('Found existing user document:', data);
           setUserData(data);
         } else {
-          // Tworzymy nowy dokument użytkownika
-          console.log('Creating new user document');
-          await createOrUpdateUser(user.uid, {
-            email: user.email || '',
-            name: user.displayName || 'Nowy Użytkownik'
-          });
-          
-          // Pobieramy świeżo utworzony dokument
-          const newUserDoc = await getDoc(userDocRef);
-          const data = {
-            id: newUserDoc.id,
-            ...newUserDoc.data()
-          } as UserData;
-          
-          console.log('Created new user document:', data);
-          setUserData(data);
+          // 2. Jeśli nie znaleziono po email, spróbuj po Auth ID
+          const directRef = doc(db, 'Users', user.uid);
+          const directSnap = await getDoc(directRef);
+
+          if (directSnap.exists()) {
+            const data = {
+              id: directSnap.id,
+              ...directSnap.data()
+            } as UserData;
+            
+            console.log('Found user document by Auth ID:', data);
+            setUserData(data);
+          } else {
+            // 3. Jeśli nie znaleziono, utwórz nowy dokument
+            console.log('Creating new user document');
+            await createOrUpdateUser(user.uid, {
+              email: user.email || '',
+              name: user.displayName || 'Nowy Użytkownik'
+            });
+            
+            const newUserDoc = await getDoc(directRef);
+            const data = {
+              id: newUserDoc.id,
+              ...newUserDoc.data()
+            } as UserData;
+            
+            console.log('Created new user document:', data);
+            setUserData(data);
+          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -63,7 +86,9 @@ export default function SettingsPageWrapper() {
       }
     };
 
-    fetchUserData();
+    if (user) {
+      fetchUserData();
+    }
   }, [user]);
 
   if (isLoading) {
