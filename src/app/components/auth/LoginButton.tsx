@@ -5,7 +5,6 @@ import { LogIn } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { auth } from '@/app/config/firebase';
-import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
