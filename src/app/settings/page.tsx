@@ -1,12 +1,19 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Camera, Save, X } from 'lucide-react';
+import { User, Camera, Save, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/SimpleAlert';
+import { useRouter } from 'next/navigation';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const [userData, setUserData] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [avatar, setAvatar] = useState<File | null>(null);
@@ -14,15 +21,44 @@ export default function SettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Populate initial values when user loads
-    if (user) {
-      const nameParts = user.displayName?.split(' ') || [];
-      setFirstName(nameParts[0] || '');
-      setLastName(nameParts[1] || '');
-    }
+    const fetchUserData = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const db = getFirestore();
+        const userDocRef = doc(db, 'Users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const fullName = data.name || '';
+          const nameParts = fullName.split(' ');
+          
+          setUserData({
+            name: fullName,
+            email: data.email || user.email || ''
+          });
+
+          // Set first and last name
+          setFirstName(nameParts[0] || '');
+          setLastName(nameParts.slice(1).join(' ') || '');
+        }
+      } catch (err) {
+        console.error('Error fetching user data', err);
+        setError('Nie udało się załadować danych użytkownika');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, [user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,13 +118,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleGoBack = () => {
+    router.push('/');
+  };
+
   const getInitials = () => {
     return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
   };
 
+  // Ekran ładowania
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Ustawienia profilu</h1>
+      <div className="flex items-center mb-8">
+        <button
+          onClick={handleGoBack}
+          className="mr-4 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-3xl font-bold text-gray-900">Ustawienia profilu</h1>
+      </div>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -193,7 +250,7 @@ export default function SettingsPage() {
             <input
               type="email"
               id="email"
-              value={user?.email || ''}
+              value={userData?.email || user?.email || ''}
               disabled
               className="w-full p-3 bg-gray-100 text-gray-600 border rounded-lg cursor-not-allowed"
             />
@@ -218,9 +275,9 @@ export default function SettingsPage() {
                   onClick={() => {
                     setIsEditing(false);
                     // Reset to original values
-                    const nameParts = user?.displayName?.split(' ') || [];
+                    const nameParts = userData?.name.split(' ') || [];
                     setFirstName(nameParts[0] || '');
-                    setLastName(nameParts[1] || '');
+                    setLastName(nameParts.slice(1).join(' ') || '');
                     setAvatar(null);
                     setPreviewAvatar(null);
                   }}
