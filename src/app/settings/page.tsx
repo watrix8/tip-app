@@ -25,6 +25,11 @@ export default function SettingsPageWrapper() {
     const fetchUserData = async () => {
       console.log('Current auth user:', user);
       
+      console.log('[SettingsPageWrapper] Starting fetchUserData', {
+        authUserId: user?.uid,
+        authUserEmail: user?.email
+      });
+
       if (!user?.uid) {
         setError('Brak zalogowanego użytkownika');
         setIsLoading(false);
@@ -36,6 +41,12 @@ export default function SettingsPageWrapper() {
         const usersRef = collection(db, 'Users');
         const q = query(usersRef, where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
+
+        console.log('[SettingsPageWrapper] Query result:', {
+            empty: querySnapshot.empty,
+            docsCount: querySnapshot.docs.length,
+            firstDocId: querySnapshot.empty ? null : querySnapshot.docs[0]?.id
+          });
 
         if (!querySnapshot.empty) {
           // Znaleziono istniejący dokument
@@ -74,6 +85,10 @@ export default function SettingsPageWrapper() {
               ...newUserDoc.data()
             } as UserData;
             
+            console.log('[SettingsPageWrapper] Final userData:', {
+                id: data.id,
+                email: data.email
+              });
             console.log('Created new user document:', data);
             setUserData(data);
           }

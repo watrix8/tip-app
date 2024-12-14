@@ -8,6 +8,10 @@ import { db } from '@/app/config/firebase';
 import type { SettingsPageProps } from '@/app/types/user';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
+  console.log('[SettingsPage] Received currentUser:', {
+    id: currentUser?.id,
+    email: currentUser?.email
+  });
   const router = useRouter();
   const [name, setName] = useState(currentUser?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
