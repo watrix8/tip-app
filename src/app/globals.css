@@ -3,96 +3,35 @@
 @tailwind utilities;
 
 :root {
-  /* Podstawowe kolory */
-  --primary: #9FE082; /* Zielony - główny kolor akcji, przyciski CTA */
-  --primary-dark: #25361E; /* Ciemniejszy zielony - nagłówki, stopka */
-  --secondary: #A1859E; /* Fioletowy - akcenty, wyróżnienia */
-  --accent: #E082D7; /* Różowy - specjalne elementy, powiadomienia */
-  --neutral: #808B7C; /* Stonowany zielono-szary - tło sekcji, ramki */
-  --deep: #664763; /* Głęboki fiolet - tekst kontrastowy */
-  
-  /* Tło i tekst */
-  --background: #FFFFFF;
-  --foreground: #25361E;
-  
-  /* Odcienie dla hover states i gradientów */
-  --primary-hover: #8FD072;
-  --secondary-hover: #917589;
-  --accent-hover: #D072C7;
-  
-  /* Status colors */
-  --success: #9FE082;
-  --error: #E082D7;
-  --warning: #E0C782;
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
-/* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1A1A1A;
-    --foreground: #E5E5E5;
-    --primary: #7BC05E;
-    --primary-dark: #1C2817;
-    --secondary: #8A6F87;
-    --accent: #C06AB9;
-    --neutral: #6A7466;
-    --deep: #523658;
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Custom Components */
-@layer components {
-  .btn-primary {
-    @apply bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-dark)] 
-    font-medium py-2 px-4 rounded-lg transition-colors;
-  }
-  
-  .btn-secondary {
-    @apply bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white 
-    font-medium py-2 px-4 rounded-lg transition-colors;
-  }
-  
-  .card {
-    @apply bg-white dark:bg-[var(--primary-dark)] rounded-xl shadow-lg p-6;
-  }
-}
-
-/* Form Elements */
+/* Globalne style dla inputów */
 @layer base {
   input {
-    @apply bg-white dark:bg-[var(--primary-dark)] text-[var(--deep)] 
-    dark:text-white border border-[var(--neutral)] rounded-lg px-4 py-2;
+    @apply text-gray-900;
   }
   
   input::placeholder {
-    @apply text-[var(--neutral)];
+    @apply text-gray-500;
   }
-  
+
+  /* Zachowuj kolor tekstu dla inputów typu checkbox */
   input[type="checkbox"] {
-    @apply text-[var(--primary)];
+    @apply text-blue-600;
   }
-  
-  select {
-    @apply bg-white dark:bg-[var(--primary-dark)] text-[var(--deep)] 
-    dark:text-white border border-[var(--neutral)] rounded-lg px-4 py-2;
-  }
-}
-
-/* Status Indicators */
-.status-success {
-  @apply bg-[var(--success)] text-[var(--primary-dark)];
-}
-
-.status-error {
-  @apply bg-[var(--error)] text-white;
-}
-
-.status-warning {
-  @apply bg-[var(--warning)] text-[var(--primary-dark)];
 }

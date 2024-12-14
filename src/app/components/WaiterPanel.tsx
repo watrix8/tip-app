@@ -12,6 +12,7 @@ interface WaiterPanelProps {
   } | null;
 }
 
+// Przykładowy interfejs dla historii napiwków
 interface TipHistory {
   id: string;
   amount: number;
@@ -23,15 +24,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
   const [isLoading, setIsLoading] = useState(true);
   const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
 
-  // Funkcja do inicjałów
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
-  };
-
+  // Hook do pobierania historii napiwków
   useEffect(() => {
     const fetchTipHistory = () => {
       const mockData = [
@@ -47,11 +40,13 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   }, [currentUser?.id]);
 
+  // Funkcja generująca URL strony do napiwków
   const getTipPageUrl = () => {
     if (!currentUser?.id || !currentUser?.name) return '';
     return `${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser.id}&name=${encodeURIComponent(currentUser.name)}`;
   };
 
+  // Hook sprawdzający status Stripe
   useEffect(() => {
     async function checkStripeEnabled() {
       if (currentUser?.id) {
@@ -78,6 +73,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     return () => unsubscribe();
   }, [currentUser?.id]);
 
+  // Handler do konfiguracji Stripe
   const handleStripeSetup = async () => {
     if (currentUser?.id) {
       try {
@@ -89,6 +85,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   };
 
+  // Handler otwierający stronę napiwków w nowym oknie
   const handleTipPageOpen = () => {
     const url = getTipPageUrl();
     if (url) {
@@ -98,33 +95,28 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Sekcja główna z awatarem */}
+      {/* Sekcja główna z nazwą kelnera */}
       <div className="text-center">
-        <div className="waiter-avatar">
-          <span className="waiter-initials">
-            {currentUser?.name ? getInitials(currentUser.name) : ''}
-          </span>
-        </div>
-        <h1 className="waiter-name">
+        <h1 className="text-2xl font-bold text-gray-900">
           Panel kelnera: {currentUser?.name}
         </h1>
       </div>
 
       {/* Stripe Connect Section */}
       {!isLoading && !isStripeEnabled && (
-        <div className="stripe-warning">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-[var(--warning)]" />
+            <AlertCircle className="h-5 w-5 text-yellow-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-[var(--deep)]">
+              <h3 className="text-sm font-medium text-yellow-800">
                 Skonfiguruj odbieranie płatności
               </h3>
-              <p className="mt-2 text-sm text-[var(--deep)]">
+              <p className="mt-2 text-sm text-yellow-700">
                 Aby móc otrzymywać napiwki, musisz skonfigurować konto Stripe.
               </p>
               <button
                 onClick={handleStripeSetup}
-                className="stripe-setup-button"
+                className="mt-4 bg-yellow-800 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
               >
                 Skonfiguruj płatności
               </button>
@@ -135,19 +127,19 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
 
       {/* Link do strony napiwków */}
       {isStripeEnabled && !isLoading && (
-        <div className="border-t border-[var(--neutral)] pt-6">
+        <div className="border-t pt-6">
           <div className="text-center">
-            <h4 className="font-semibold text-[var(--foreground)] mb-4">
+            <h4 className="font-semibold text-gray-900 mb-4">
               Twoja strona do napiwków
             </h4>
             <button
               onClick={handleTipPageOpen}
-              className="tip-link-button"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <span className="mr-2">Otwórz stronę napiwków</span>
               <ExternalLink className="w-4 h-4" />
             </button>
-            <p className="text-sm text-[var(--neutral)] mt-2">
+            <p className="text-sm text-gray-500 mt-2">
               Kliknij aby otworzyć stronę do napiwków w nowym oknie
             </p>
           </div>
@@ -155,27 +147,27 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       )}
 
       {/* Historia napiwków */}
-      <div className="border-t border-[var(--neutral)] pt-6">
-        <h4 className="font-semibold text-[var(--foreground)] mb-4 text-center">
+      <div className="border-t pt-6">
+        <h4 className="font-semibold text-gray-900 mb-4 text-center">
           Historia napiwków
         </h4>
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="tip-history-table">
-              <thead className="tip-history-header">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="tip-history-cell text-left">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Data
                   </th>
-                  <th className="tip-history-cell text-right">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     Kwota
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--neutral)]">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {tipHistory.map((tip) => (
                   <tr key={tip.id}>
-                    <td className="tip-history-cell">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {tip.date.toLocaleDateString('pl-PL', {
                         day: '2-digit',
                         month: '2-digit',
@@ -185,7 +177,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
                         minute: '2-digit',
                       })}
                     </td>
-                    <td className="tip-history-cell text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       {tip.amount.toFixed(2)} zł
                     </td>
                   </tr>
@@ -200,7 +192,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       <div className="pt-6">
         <button
           onClick={onLogout}
-          className="logout-button"
+          className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
         >
           <LogOut className="w-5 h-5 mr-2" />
           Wyloguj się
