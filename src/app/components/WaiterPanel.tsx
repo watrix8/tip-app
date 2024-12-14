@@ -25,12 +25,25 @@ interface TipHistory {
 export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps) {
   const [isStripeEnabled, setIsStripeEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [tipHistory, setTipHistory] = useState<TipHistory[]>([
-    // Przykładowe dane - w rzeczywistości będą pobierane z bazy
-    { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
-    { id: '2', amount: 15, date: new Date('2024-03-14T15:45:00') },
-    { id: '3', amount: 20, date: new Date('2024-03-13T18:20:00') },
-  ]);
+  const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
+
+  // Hook do pobierania historii napiwków
+  useEffect(() => {
+    // Tutaj docelowo będzie pobieranie z bazy danych
+    // Na razie ustawiamy przykładowe dane
+    const fetchTipHistory = () => {
+      const mockData = [
+        { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
+        { id: '2', amount: 15, date: new Date('2024-03-14T15:45:00') },
+        { id: '3', amount: 20, date: new Date('2024-03-13T18:20:00') },
+      ];
+      setTipHistory(mockData);
+    };
+
+    if (currentUser?.id) {
+      fetchTipHistory();
+    }
+  }, [currentUser?.id]);
 
   // Funkcja do generowania inicjałów
   const getInitials = (name: string) => {
