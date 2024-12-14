@@ -7,7 +7,7 @@ import LoginButton from '@/app/components/auth/LoginButton';
 import RegisterForm from '@/app/components/auth/RegisterForm';
 import dynamic from 'next/dynamic';
 
-const WaiterPanel = dynamic(() => import('@/app/pages/waiter-panel/WaiterPanel'), {
+const WaiterPanel = dynamic(() => import('@/app/waiter-panel/WaiterPanel'), {
   ssr: false
 });
   

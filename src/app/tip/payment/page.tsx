@@ -11,7 +11,7 @@ import {
   useElements, 
   PaymentElement 
 } from '@stripe/react-stripe-js';
-import { Alert, AlertDescription } from '../../../../components/SimpleAlert';
+import { Alert, AlertDescription } from '../../../components/SimpleAlert';
 
 const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
 
