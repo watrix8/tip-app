@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
-import { addUser } from '@/app/utils/firebaseUtils';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/app/config/firebase';
+import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -26,13 +28,18 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     }
   
     try {
-      await addUser(
-        `${formData.firstName} ${formData.lastName}`, // Łączymy imię i nazwisko
+      // Najpierw tworzymy użytkownika w Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
         formData.email,
-        formData.password,
-        '', // Usunęliśmy restaurantId
-        '' // Usunęliśmy avatarUrl
+        formData.password
       );
+
+      // Następnie tworzymy dokument użytkownika w Firestore
+      await createOrUpdateUser(userCredential.user.uid, {
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`,
+      });
       
       alert('Rejestracja udana! Możesz się teraz zalogować.');
       onBackToLogin();

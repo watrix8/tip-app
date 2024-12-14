@@ -1,69 +1,60 @@
-import { getFirestore, collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
+import type { UserData } from '@/app/types/user';
 
 const db = getFirestore(getApp());
 
-export const addUser = async (name: string, email: string, password: string, restaurantId: string, avatarUrl: string) => {
+// Funkcja do tworzenia lub aktualizacji dokumentu użytkownika
+export const createOrUpdateUser = async (uid: string, userData: {
+  email: string;
+  name?: string;
+  avatarUrl?: string;
+}) => {
   try {
-    // Dodajemy użytkownika i od razu pobieramy referencję dokumentu
-    const docRef = await addDoc(collection(db, 'Users'), {
-      name,
-      email,
-      password,  // W prawdziwej aplikacji hasło nie powinno być przechowywane w czystej postaci!
-      restaurantId,
-      avatarUrl,
-      createdAt: new Date().toISOString()
-    });
+    const userRef = doc(db, 'Users', uid);
+    const userSnap = await getDoc(userRef);
 
-    // Aktualizujemy dokument dodając pole id równe ID dokumentu
-    await updateDoc(docRef, {
-      id: docRef.id
-    });
+    if (!userSnap.exists()) {
+      // Tworzymy nowy dokument z ID takim samym jak uid z Firebase Auth
+      await setDoc(userRef, {
+        ...userData,
+        id: uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // Aktualizujemy istniejący dokument
+      await updateDoc(userRef, {
+        ...userData,
+        updatedAt: new Date().toISOString()
+      });
+    }
 
-    console.log('Nowy użytkownik dodany z ID: ', docRef.id);
-    return docRef.id;
-  } catch (e) {
-    console.error('Błąd przy dodawaniu użytkownika: ', e);
-    throw e;
+    return uid;
+  } catch (error) {
+    console.error('Error creating/updating user:', error);
+    throw error;
   }
 };
 
 // Funkcja do pobierania danych użytkownika
-export const getUserData = async (userId: string) => {
+export const getUserData = async (userId: string): Promise<UserData | null> => {
   try {
     const userDoc = await getDoc(doc(db, 'Users', userId));
     if (userDoc.exists()) {
-      const userData = userDoc.data();
-      // Dodajemy id do danych użytkownika
       return {
-        ...userData,
-        id: userDoc.id
-      };
+        id: userDoc.id,
+        ...userDoc.data()
+      } as UserData;
     }
     return null;
-  } catch (e) {
-    console.error('Błąd przy pobieraniu danych użytkownika: ', e);
-    throw e;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error;
   }
 };
 
-export const updateUserProfile = async (userId: string, data: Partial<{
-  name: string;
-  avatarUrl: string;
-  restaurantId: string;
-}>) => {
-  try {
-    const userRef = doc(db, 'Users', userId);
-    await updateDoc(userRef, {
-      ...data,
-      updatedAt: new Date().toISOString()
-    });
-  } catch (e) {
-    console.error('Błąd przy aktualizacji profilu: ', e);
-    throw e;
-  }
-};
-
+// Funkcja do aktualizacji konta Stripe
 export const updateUserStripeAccount = async (userId: string, stripeAccountId: string) => {
   if (!stripeAccountId) {
     throw new Error('Stripe Account ID is required');

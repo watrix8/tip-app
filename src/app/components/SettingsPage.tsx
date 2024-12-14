@@ -5,21 +5,9 @@ import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
+import type { SettingsPageProps } from '@/app/types/user';
 
-interface SettingsPageProps {
-  currentUser: {
-    id?: string;
-    name: string;
-    email: string;
-    avatarUrl?: string;
-    restaurantId?: string;
-    stripeAccountId?: string;
-    stripeOnboardingStatus?: string;
-    stripeOnboardingTimestamp?: string;
-  } | null;
-}
-
-export default function SettingsPage({ currentUser }: SettingsPageProps) {
+const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const router = useRouter();
   const [name, setName] = useState(currentUser?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
@@ -86,11 +74,11 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
         <div className="mb-8 flex items-center">
           <button
             onClick={handleGoBack}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-4"
+            className="p-2 hover:bg-gray-100 rounded-lg mr-4 text-gray-900"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-bold">Ustawienia profilu</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Ustawienia profilu</h1>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -186,4 +174,6 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
       </div>
     </div>
   );
-}
+};
+
+export default SettingsPage;
