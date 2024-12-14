@@ -53,7 +53,6 @@ async function handleConnectAccount(waiterId: string, refreshUrl: string, return
 
 async function handlePaymentIntent(amount: number, waiterId: string, stripeAccountId: string) {
     try {
-      // Sprawdzanie czy kelner ma konto Stripe
       const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
       
       if (!waiterDoc.exists()) {
@@ -67,21 +66,16 @@ async function handlePaymentIntent(amount: number, waiterId: string, stripeAccou
         throw new Error('Kelner nie ma skonfigurowanego konta Stripe');
       }
    
-      // Sprawdzanie statusu konta Stripe
       const account = await stripe.accounts.retrieve(connectedAccountId);
       if (!account.charges_enabled || !account.payouts_enabled) {
         throw new Error('Konto Stripe kelnera nie jest w pełni skonfigurowane');
       }
    
-      // Tworzenie PaymentIntent
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Konwersja na centy
+        amount: Math.round(amount * 100),
         currency: 'pln',
-        payment_method_types: [
-          'card',
-          'blik',
-        ],
-        application_fee_amount: Math.round(amount * 0.05 * 100), // 5% prowizji
+        payment_method_types: ['card', 'blik'],
+        application_fee_amount: Math.round(amount * 0.05 * 100),
         transfer_data: {
           destination: connectedAccountId,
         },
@@ -89,8 +83,12 @@ async function handlePaymentIntent(amount: number, waiterId: string, stripeAccou
           waiterId,
           type: 'tip',
         },
-        statement_descriptor: 'NAPIWEK', // Opis na wyciągu z karty
+        statement_descriptor: 'NAPIWEK',
         statement_descriptor_suffix: 'TIP',
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'always'
+        }
       });
    
       return { 
@@ -101,7 +99,7 @@ async function handlePaymentIntent(amount: number, waiterId: string, stripeAccou
       console.error('Error creating payment intent:', error);
       throw error;
     }
-   }
+  }
 
 async function handleAccountStatus(accountId: string) {
  try {
