@@ -2,7 +2,7 @@ import { LogOut, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
 import { auth } from '@/app/config/firebase';
-import StripeExpressDashboard from './dashboard/StripeExpressDashboard';
+//import StripeExpressDashboard from './dashboard/StripeExpressDashboard';
 
 interface WaiterPanelProps {
   onLogout: () => void;
