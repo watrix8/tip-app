@@ -13,16 +13,8 @@ import {
 } from '@stripe/react-stripe-js';
 import { Alert, AlertDescription } from '../../components/SimpleAlert';
 
-// Debug logs
-console.log('Environment check in TipPage:', {
-  stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
-  nodeEnv: process.env.NODE_ENV
-});
-
-// Initialize Stripe with fallback
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51PcaqcEkSyI14zZVh7CYtUq6mGQrd6r1xSRrlfxExVg3BaIJkOfGYLQ5kSewrQldmu0nddVccFXgzMcyFGgPHpgv00b3kXldMS';
-const stripePromise = loadStripe(stripeKey);
+// Initialize Stripe
+const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
 
 interface Waiter {
   name: string;
