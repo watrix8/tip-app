@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CreditCard } from 'lucide-react';
-import Image from 'next/image';
+import { CreditCard, AlertTriangle } from 'lucide-react';
 import { loadStripe, StripeError } from '@stripe/stripe-js';
 import { 
   Elements, 
@@ -11,7 +10,7 @@ import {
   useElements, 
   PaymentElement 
 } from '@stripe/react-stripe-js';
-import { Alert, AlertDescription } from '../../components/SimpleAlert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Initialize Stripe
 const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
@@ -19,7 +18,6 @@ const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvA
 interface Waiter {
   name: string;
   id: string;
-  avatarUrl: string;
 }
 
 interface PaymentFormProps {
@@ -95,11 +93,13 @@ export default function TipPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsError, setShowTermsError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  
   const searchParams = useSearchParams();
   const waiterId = searchParams.get('waiterId');
   const name = searchParams.get('name');
@@ -111,7 +111,6 @@ export default function TipPage() {
       const waiterData: Waiter = {
         name: decodeURIComponent(name),
         id: waiterId,
-        avatarUrl: `https://example.com/avatars/${waiterId}.jpg`,
       };
       setWaiter(waiterData);
     }
@@ -135,6 +134,11 @@ export default function TipPage() {
   };
 
   const handlePayment = async () => {
+    if (!termsAccepted) {
+      setShowTermsError(true);
+      return;
+    }
+
     const finalAmount = getFinalAmount();
     if (!finalAmount || finalAmount <= 0 || !waiter) {
       setPaymentError('Proszę wybrać lub wpisać kwotę napiwku');
@@ -192,32 +196,18 @@ export default function TipPage() {
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden">
-              {!imageError ? (
-                <div className="relative w-24 h-24">
-                  <Image
-                    src={waiter.avatarUrl}
-                    alt={`Avatar ${waiter.name}`}
-                    fill
-                    className="object-cover"
-                    onError={() => setImageError(true)}
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-100">
-                  <span className="text-blue-600 text-2xl font-bold">
-                    {getInitials(waiter.name)}
-                  </span>
-                </div>
-              )}
+            <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-blue-100">
+              <span className="text-blue-600 text-2xl font-bold">
+                {getInitials(waiter.name)}
+              </span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Napiwek dla: {waiter.name}</h1>
         </div>
 
         {!clientSecret ? (
-          <>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
               {tipAmounts.map((amount) => (
                 <button
                   key={amount}
@@ -236,7 +226,7 @@ export default function TipPage() {
               ))}
             </div>
 
-            <div className="mb-6">
+            <div>
               <input
                 type="number"
                 placeholder="Wpisz własną kwotę"
@@ -251,16 +241,40 @@ export default function TipPage() {
               />
             </div>
 
-            <div className="mb-6">
-              <label className="flex items-center space-x-2 text-sm text-gray-600">
+            <label className="flex items-center space-x-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={coverFee}
+                onChange={(e) => setCoverFee(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span>Pokryj koszty transakcji (+1 PLN)</span>
+            </label>
+
+            <div className="space-y-2">
+              <label className="flex items-start space-x-2 text-sm text-gray-600">
                 <input
                   type="checkbox"
-                  checked={coverFee}
-                  onChange={(e) => setCoverFee(e.target.checked)}
-                  className="rounded border-gray-300"
+                  checked={termsAccepted}
+                  onChange={(e) => {
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) {
+                      setShowTermsError(false);
+                    }
+                  }}
+                  className="mt-1 rounded border-gray-300"
                 />
-                <span>Pokryj koszty transakcji (+1 PLN)</span>
+                <span>
+                  Akceptuję <a href="/regulamin" target="_blank" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji usługi przekazania napiwku
+                </span>
               </label>
+              
+              {showTermsError && (
+                <div className="flex items-center space-x-2 text-red-600 text-sm">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Musisz zaakceptować regulamin aby kontynuować</span>
+                </div>
+              )}
             </div>
 
             <button
@@ -271,7 +285,7 @@ export default function TipPage() {
               <CreditCard className="w-5 h-5 mr-2" />
               Zapłać {getFinalAmount().toFixed(2)} PLN
             </button>
-          </>
+          </div>
         ) : (
           <Elements stripe={stripePromise} options={{ clientSecret }}>
             <PaymentForm
