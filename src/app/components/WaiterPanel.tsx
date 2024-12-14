@@ -86,71 +86,71 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Sekcja główna z inicjałami */}
-      <div className="text-center">
-        <div className="w-24 h-24 rounded-full bg-[var(--primary)] bg-opacity-20 flex items-center justify-center mx-auto">
-          <span className="text-2xl font-bold text-[var(--primary-dark)]">
-            {currentUser?.name ? getInitials(currentUser.name) : ''}
-          </span>
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        {/* Sekcja główna z inicjałami */}
+        <div className="text-center bg-[var(--neutral)] bg-opacity-5 p-6 rounded-xl shadow-lg">
+          <div className="w-24 h-24 rounded-full bg-[var(--primary)] bg-opacity-20 flex items-center justify-center mx-auto">
+            <span className="text-2xl font-bold text-[var(--primary-dark)]">
+              {currentUser?.name ? getInitials(currentUser.name) : ''}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-[var(--primary-dark)] mt-4">
+            Panel kelnera: {currentUser?.name}
+          </h1>
         </div>
-        <h1 className="text-2xl font-bold text-[var(--primary-dark)] mt-4">
-          Panel kelnera: {currentUser?.name}
-        </h1>
-      </div>
 
-      {/* Stripe Connect Section */}
-      {!isLoading && !isStripeEnabled && (
-        <div className="bg-[var(--neutral)] bg-opacity-10 border-l-4 border-[var(--accent)] p-4 rounded-r-lg">
-          <div className="flex">
-            <AlertCircle className="h-5 w-5 text-[var(--accent)]" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-[var(--deep)]">
-                Skonfiguruj odbieranie płatności
-              </h3>
-              <p className="mt-2 text-sm text-[var(--neutral)]">
-                Aby móc otrzymywać napiwki, musisz skonfigurować konto Stripe.
-              </p>
-              <button
-                onClick={handleStripeSetup}
-                className="mt-4 bg-[var(--primary)] text-[var(--primary-dark)] px-4 py-2 rounded-lg 
-                         hover:bg-[var(--primary-hover)] transition-colors font-medium"
-              >
-                Skonfiguruj płatności
-              </button>
+        {/* Stripe Connect Section */}
+        {!isLoading && !isStripeEnabled && (
+          <div className="bg-[var(--neutral)] bg-opacity-5 p-6 rounded-xl shadow-lg border-l-4 border-[var(--accent)]">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-[var(--accent)]" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-[var(--deep)]">
+                  Skonfiguruj odbieranie płatności
+                </h3>
+                <p className="mt-2 text-sm text-[var(--neutral)]">
+                  Aby móc otrzymywać napiwki, musisz skonfigurować konto Stripe.
+                </p>
+                <button
+                  onClick={handleStripeSetup}
+                  className="mt-4 bg-[var(--primary)] text-[var(--primary-dark)] px-4 py-2 rounded-lg 
+                           hover:bg-[var(--primary-hover)] transition-colors font-medium"
+                >
+                  Skonfiguruj płatności
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* QR Code Section */}
-      {isStripeEnabled && !isLoading && (
-        <div className="border-t border-[var(--neutral)] pt-6">
+        {/* QR Code Section */}
+        {isStripeEnabled && !isLoading && (
+          <div className="bg-[var(--neutral)] bg-opacity-5 p-6 rounded-xl shadow-lg">
+            <h4 className="font-semibold text-[var(--primary-dark)] mb-4 text-center">
+              Twój kod QR do napiwków
+            </h4>
+            <div className="flex justify-center">
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <QRCodeSVG 
+                  value={`${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser?.id}&name=${encodeURIComponent(currentUser?.name || '')}`}
+                  size={200}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+            </div>
+            <p className="text-sm text-[var(--neutral)] mt-2 text-center">
+              Pokaż ten kod klientom, aby mogli zostawić napiwek
+            </p>
+          </div>
+        )}
+
+        {/* Historia napiwków */}
+        <div className="bg-[var(--neutral)] bg-opacity-5 p-6 rounded-xl shadow-lg">
           <h4 className="font-semibold text-[var(--primary-dark)] mb-4 text-center">
-            Twój kod QR do napiwków
+            Historia napiwków
           </h4>
-          <div className="flex justify-center">
-            <div className="bg-white p-4 rounded-lg shadow-md border border-[var(--neutral)]">
-              <QRCodeSVG 
-                value={`${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser?.id}&name=${encodeURIComponent(currentUser?.name || '')}`}
-                size={200}
-                level="H"
-                includeMargin
-              />
-            </div>
-          </div>
-          <p className="text-sm text-[var(--neutral)] mt-2 text-center">
-            Pokaż ten kod klientom, aby mogli zostawić napiwek
-          </p>
-        </div>
-      )}
-
-      {/* Historia napiwków */}
-      <div className="border-t border-[var(--neutral)] pt-6">
-        <h4 className="font-semibold text-[var(--primary-dark)] mb-4 text-center">
-          Historia napiwków
-        </h4>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-[var(--neutral)]">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[var(--neutral)]">
               <thead className="bg-[var(--neutral)] bg-opacity-10">
@@ -163,10 +163,10 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-[var(--neutral)]">
+              <tbody className="divide-y divide-[var(--neutral)]">
                 {tipHistory.map((tip) => (
-                  <tr key={tip.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--neutral)]">
+                  <tr key={tip.id} className="hover:bg-[var(--neutral)] hover:bg-opacity-5">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--deep)]">
                       {tip.date.toLocaleDateString('pl-PL', {
                         day: '2-digit',
                         month: '2-digit',
@@ -185,14 +185,13 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
             </table>
           </div>
         </div>
-      </div>
 
-      {/* Przycisk wylogowania */}
-      <div className="pt-6">
+        {/* Przycisk wylogowania */}
         <button
           onClick={onLogout}
           className="w-full bg-[var(--secondary)] text-white py-3 px-4 rounded-lg 
-                   flex items-center justify-center hover:bg-[var(--secondary-hover)] transition-colors"
+                   flex items-center justify-center hover:bg-[var(--secondary-hover)] 
+                   transition-colors"
         >
           <LogOut className="w-5 h-5 mr-2" />
           Wyloguj się
