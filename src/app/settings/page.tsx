@@ -5,17 +5,24 @@ import { User, Camera, Save, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/SimpleAlert';
 import { useRouter } from 'next/navigation';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  updateDoc 
+} from 'firebase/firestore';
+import { 
+  getStorage, 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [userData, setUserData] = useState<{
-    name: string;
-    email: string;
-  } | null>(null);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -38,17 +45,12 @@ export default function SettingsPage() {
 
         if (userDoc.exists()) {
           const data = userDoc.data();
-          const fullName = data.name || '';
-          const nameParts = fullName.split(' ');
+          setName(data.name || user.displayName || '');
           
-          setUserData({
-            name: fullName,
-            email: data.email || user.email || ''
-          });
-
-          // Set first and last name
-          setFirstName(nameParts[0] || '');
-          setLastName(nameParts.slice(1).join(' ') || '');
+          // Jeśli jest zdjęcie profilowe, ustaw je jako domyślne
+          if (data.avatarUrl) {
+            setPreviewAvatar(data.avatarUrl);
+          }
         }
       } catch (err) {
         console.error('Error fetching user data', err);
@@ -97,21 +99,45 @@ export default function SettingsPage() {
     setSuccess(null);
 
     // Basic validation
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('Imię i nazwisko są wymagane');
+    if (!name.trim()) {
+      setError('Imię jest wymagane');
       return;
     }
 
     try {
-      // In a real app, you'd use Firebase Auth to update profile
-      // and potentially upload avatar to Firebase Storage
-      console.log('Saving profile', { firstName, lastName, avatar });
+      if (!user) throw new Error('Użytkownik nie jest zalogowany');
 
-      // Simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const db = getFirestore();
+      const userDocRef = doc(db, 'Users', user.uid);
+
+      // Upload avatar if exists
+      let avatarUrl = previewAvatar;
+      if (avatar) {
+        const storage = getStorage();
+        const avatarRef = ref(storage, `avatars/${user.uid}`);
+        const snapshot = await uploadBytes(avatarRef, avatar);
+        avatarUrl = await getDownloadURL(snapshot.ref);
+      }
+
+      // Update Firestore document
+      await updateDoc(userDocRef, {
+        name: name,
+        ...(avatarUrl && { avatarUrl })
+      });
+
+      // Update Firebase Auth profile
+      await updateProfile(user, {
+        displayName: name,
+        ...(avatarUrl && { photoURL: avatarUrl })
+      });
 
       setSuccess('Profil został zaktualizowany');
       setIsEditing(false);
+      
+      // Update preview if new avatar was uploaded
+      if (avatarUrl) {
+        setPreviewAvatar(avatarUrl);
+      }
     } catch (err) {
       console.error('Error saving profile', err);
       setError('Nie udało się zaktualizować profilu');
@@ -123,7 +149,7 @@ export default function SettingsPage() {
   };
 
   const getInitials = () => {
-    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+    return name ? name[0].toUpperCase() : '';
   };
 
   // Ekran ładowania
@@ -163,9 +189,9 @@ export default function SettingsPage() {
         {/* Avatar Section */}
         <div className="flex items-center space-x-6 mb-8">
           <div className="relative">
-            {previewAvatar || user?.photoURL ? (
+            {previewAvatar ? (
               <img 
-                src={previewAvatar || user?.photoURL || ''} 
+                src={previewAvatar} 
                 alt="Avatar" 
                 className="w-24 h-24 rounded-full object-cover"
               />
@@ -206,41 +232,22 @@ export default function SettingsPage() {
 
         {/* Profile Information */}
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                Imię
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                disabled={!isEditing}
-                className={`w-full p-3 border rounded-lg ${
-                  isEditing 
-                    ? 'bg-white border-gray-300' 
-                    : 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                }`}
-              />
-            </div>
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                Nazwisko
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                disabled={!isEditing}
-                className={`w-full p-3 border rounded-lg ${
-                  isEditing 
-                    ? 'bg-white border-gray-300' 
-                    : 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                }`}
-              />
-            </div>
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Imię
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={!isEditing}
+              className={`w-full p-3 border rounded-lg ${
+                isEditing 
+                  ? 'bg-white border-gray-300' 
+                  : 'bg-gray-100 text-gray-600 cursor-not-allowed'
+              }`}
+            />
           </div>
 
           <div>
@@ -250,7 +257,7 @@ export default function SettingsPage() {
             <input
               type="email"
               id="email"
-              value={userData?.email || user?.email || ''}
+              value={user?.email || ''}
               disabled
               className="w-full p-3 bg-gray-100 text-gray-600 border rounded-lg cursor-not-allowed"
             />
@@ -275,11 +282,14 @@ export default function SettingsPage() {
                   onClick={() => {
                     setIsEditing(false);
                     // Reset to original values
-                    const nameParts = userData?.name.split(' ') || [];
-                    setFirstName(nameParts[0] || '');
-                    setLastName(nameParts.slice(1).join(' ') || '');
-                    setAvatar(null);
-                    setPreviewAvatar(null);
+                    const userDoc = doc(getFirestore(), 'Users', user?.uid || '');
+                    getDoc(userDoc).then(doc => {
+                      if (doc.exists()) {
+                        const data = doc.data();
+                        setName(data.name || '');
+                        setPreviewAvatar(data.avatarUrl || null);
+                      }
+                    });
                   }}
                   className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors"
                 >
