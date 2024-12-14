@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, CreditCard } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -11,7 +11,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe('pk_test_51PcaqcEkSyI14zZVh7CYtUq6mGQrd6r1xSRrlfxExVg3BaIJkOfGYLQ5kSewrQldmu0nddVccFXgzMcyFGgPHpgv00b3kXldMS');
 
 interface Waiter {
   name: string;
@@ -242,9 +242,6 @@ export default function TipPage() {
                   checked={termsAccepted}
                   onChange={(e) => {
                     setTermsAccepted(e.target.checked);
-                    if (e.target.checked) {
-                      setShowTermsError(false);
-                    }
                   }}
                   className="mt-1 rounded border-gray-300"
                 />
