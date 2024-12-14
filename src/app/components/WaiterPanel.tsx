@@ -15,7 +15,6 @@ interface WaiterPanelProps {
   } | null;
 }
 
-// Przykładowy interfejs dla historii napiwków
 interface TipHistory {
   id: string;
   amount: number;
@@ -27,10 +26,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
   const [isLoading, setIsLoading] = useState(true);
   const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
 
-  // Hook do pobierania historii napiwków
   useEffect(() => {
-    // Tutaj docelowo będzie pobieranie z bazy danych
-    // Na razie ustawiamy przykładowe dane
     const fetchTipHistory = () => {
       const mockData = [
         { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
@@ -45,7 +41,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   }, [currentUser?.id]);
 
-  // Funkcja do generowania inicjałów
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -54,7 +49,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       .toUpperCase();
   };
 
-  // Hook sprawdzający status Stripe
   useEffect(() => {
     async function checkStripeEnabled() {
       if (currentUser?.id) {
@@ -71,7 +65,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
     
     checkStripeEnabled();
-
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user && currentUser?.id) {
         checkStripeEnabled();
@@ -81,7 +74,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     return () => unsubscribe();
   }, [currentUser?.id]);
 
-  // Handler do konfiguracji Stripe
   const handleStripeSetup = async () => {
     if (currentUser?.id) {
       try {
@@ -97,31 +89,32 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       {/* Sekcja główna z inicjałami */}
       <div className="text-center">
-        <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
-          <span className="text-2xl font-bold text-blue-600">
+        <div className="w-24 h-24 rounded-full bg-[var(--primary)] bg-opacity-20 flex items-center justify-center mx-auto">
+          <span className="text-2xl font-bold text-[var(--primary-dark)]">
             {currentUser?.name ? getInitials(currentUser.name) : ''}
           </span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mt-4">
+        <h1 className="text-2xl font-bold text-[var(--primary-dark)] mt-4">
           Panel kelnera: {currentUser?.name}
         </h1>
       </div>
 
       {/* Stripe Connect Section */}
       {!isLoading && !isStripeEnabled && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+        <div className="bg-[var(--neutral)] bg-opacity-10 border-l-4 border-[var(--accent)] p-4 rounded-r-lg">
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-yellow-400" />
+            <AlertCircle className="h-5 w-5 text-[var(--accent)]" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
+              <h3 className="text-sm font-medium text-[var(--deep)]">
                 Skonfiguruj odbieranie płatności
               </h3>
-              <p className="mt-2 text-sm text-yellow-700">
+              <p className="mt-2 text-sm text-[var(--neutral)]">
                 Aby móc otrzymywać napiwki, musisz skonfigurować konto Stripe.
               </p>
               <button
                 onClick={handleStripeSetup}
-                className="mt-4 bg-yellow-800 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                className="mt-4 bg-[var(--primary)] text-[var(--primary-dark)] px-4 py-2 rounded-lg 
+                         hover:bg-[var(--primary-hover)] transition-colors font-medium"
               >
                 Skonfiguruj płatności
               </button>
@@ -132,12 +125,12 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
 
       {/* QR Code Section */}
       {isStripeEnabled && !isLoading && (
-        <div className="border-t pt-6">
-          <h4 className="font-semibold text-gray-900 mb-4 text-center">
+        <div className="border-t border-[var(--neutral)] pt-6">
+          <h4 className="font-semibold text-[var(--primary-dark)] mb-4 text-center">
             Twój kod QR do napiwków
           </h4>
           <div className="flex justify-center">
-            <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="bg-white p-4 rounded-lg shadow-md border border-[var(--neutral)]">
               <QRCodeSVG 
                 value={`${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser?.id}&name=${encodeURIComponent(currentUser?.name || '')}`}
                 size={200}
@@ -146,34 +139,34 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
               />
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-2 text-center">
+          <p className="text-sm text-[var(--neutral)] mt-2 text-center">
             Pokaż ten kod klientom, aby mogli zostawić napiwek
           </p>
         </div>
       )}
 
       {/* Historia napiwków */}
-      <div className="border-t pt-6">
-        <h4 className="font-semibold text-gray-900 mb-4 text-center">
+      <div className="border-t border-[var(--neutral)] pt-6">
+        <h4 className="font-semibold text-[var(--primary-dark)] mb-4 text-center">
           Historia napiwków
         </h4>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-[var(--neutral)]">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-[var(--neutral)]">
+              <thead className="bg-[var(--neutral)] bg-opacity-10">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--deep)] uppercase">
                     Data
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-[var(--deep)] uppercase">
                     Kwota
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-[var(--neutral)]">
                 {tipHistory.map((tip) => (
                   <tr key={tip.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--neutral)]">
                       {tip.date.toLocaleDateString('pl-PL', {
                         day: '2-digit',
                         month: '2-digit',
@@ -183,7 +176,7 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
                         minute: '2-digit',
                       })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--deep)] text-right">
                       {tip.amount.toFixed(2)} zł
                     </td>
                   </tr>
@@ -198,7 +191,8 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
       <div className="pt-6">
         <button
           onClick={onLogout}
-          className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+          className="w-full bg-[var(--secondary)] text-white py-3 px-4 rounded-lg 
+                   flex items-center justify-center hover:bg-[var(--secondary-hover)] transition-colors"
         >
           <LogOut className="w-5 h-5 mr-2" />
           Wyloguj się
