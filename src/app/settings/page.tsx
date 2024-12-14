@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/app/contexts/AuthContext';
+import { useAuth } from '@/app/AuthContext';
 import { getUserData } from '@/app/utils/firebaseUtils';
 import SettingsPage from '@/app/components/SettingsPage';
 
