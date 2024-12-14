@@ -1,7 +1,4 @@
-'use client';
-
-import { LogOut, AlertCircle } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { LogOut, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
 import { auth } from '@/app/config/firebase';
@@ -29,8 +26,6 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
 
   // Hook do pobierania historii napiwków
   useEffect(() => {
-    // Tutaj docelowo będzie pobieranie z bazy danych
-    // Na razie ustawiamy przykładowe dane
     const fetchTipHistory = () => {
       const mockData = [
         { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
@@ -45,13 +40,10 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   }, [currentUser?.id]);
 
-  // Funkcja do generowania inicjałów
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
+  // Funkcja generująca URL strony do napiwków
+  const getTipPageUrl = () => {
+    if (!currentUser?.id || !currentUser?.name) return '';
+    return `${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser.id}&name=${encodeURIComponent(currentUser.name)}`;
   };
 
   // Hook sprawdzający status Stripe
@@ -93,16 +85,19 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
     }
   };
 
+  // Handler otwierający stronę napiwków w nowym oknie
+  const handleTipPageOpen = () => {
+    const url = getTipPageUrl();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Sekcja główna z inicjałami */}
+      {/* Sekcja główna z nazwą kelnera */}
       <div className="text-center">
-        <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
-          <span className="text-2xl font-bold text-blue-600">
-            {currentUser?.name ? getInitials(currentUser.name) : ''}
-          </span>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 mt-4">
+        <h1 className="text-2xl font-bold text-gray-900">
           Panel kelnera: {currentUser?.name}
         </h1>
       </div>
@@ -130,25 +125,24 @@ export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps)
         </div>
       )}
 
-      {/* QR Code Section */}
+      {/* Link do strony napiwków */}
       {isStripeEnabled && !isLoading && (
         <div className="border-t pt-6">
-          <h4 className="font-semibold text-gray-900 mb-4 text-center">
-            Twój kod QR do napiwków
-          </h4>
-          <div className="flex justify-center">
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <QRCodeSVG 
-                value={`${process.env.NEXT_PUBLIC_BASE_URL}/tip?waiterId=${currentUser?.id}&name=${encodeURIComponent(currentUser?.name || '')}`}
-                size={200}
-                level="H"
-                includeMargin
-              />
-            </div>
+          <div className="text-center">
+            <h4 className="font-semibold text-gray-900 mb-4">
+              Twoja strona do napiwków
+            </h4>
+            <button
+              onClick={handleTipPageOpen}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <span className="mr-2">Otwórz stronę napiwków</span>
+              <ExternalLink className="w-4 h-4" />
+            </button>
+            <p className="text-sm text-gray-500 mt-2">
+              Kliknij aby otworzyć stronę do napiwków w nowym oknie
+            </p>
           </div>
-          <p className="text-sm text-gray-500 mt-2 text-center">
-            Pokaż ten kod klientom, aby mogli zostawić napiwek
-          </p>
         </div>
       )}
 
