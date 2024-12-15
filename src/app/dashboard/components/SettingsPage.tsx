@@ -5,12 +5,13 @@ import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
-import { useAuth } from '@/lib/contexts/auth'; // Dodajemy import useAuth
+import { useAuth } from '@/lib/contexts/auth';
 import type { SettingsPageProps } from '@/types/user';
+import Image from 'next/image';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const router = useRouter();
-  const { user } = useAuth(); // Dodajemy destrukturyzację user z useAuth
+  const { user } = useAuth();
   const [name, setName] = useState(currentUser?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -96,11 +97,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
                 className="relative cursor-pointer group"
               >
                 {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Avatar"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
+                  <div className="relative w-32 h-32">
+                    <Image
+                      src={avatarUrl}
+                      alt="Avatar"
+                      fill
+                      className="rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  </div>
                 ) : (
                   <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
                     <User className="w-16 h-16 text-gray-400" />
