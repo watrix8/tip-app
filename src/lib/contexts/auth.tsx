@@ -10,7 +10,6 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/config/firebase';
-import { useRouter } from 'next/navigation';
 
 // Definiujemy interfejs dla kontekstu
 interface AuthContextType {
