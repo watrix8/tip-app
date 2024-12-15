@@ -1,11 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/auth';
 import LoginButton from '@/app/auth/components/LoginButton';
 import RegisterForm from '@/app/auth/components/RegisterForm';
 
 export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard/waiter');
+    }
+  }, [user, loading, router]);
+
+  if (loading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
