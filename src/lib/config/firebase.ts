@@ -23,12 +23,6 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
   throw new Error('Missing Firebase configuration');
 }
 
-// Dodaj konfigurację CORS
-const firestoreSettings = {
-  experimentalForceLongPolling: true,
-  useFetchStreams: false
-};
-
 // Inicjalizacja Firebase
 const app = initializeApp(firebaseConfig);
 
