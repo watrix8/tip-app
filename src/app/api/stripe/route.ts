@@ -4,6 +4,13 @@ import { db } from '@/lib/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Stripe from 'stripe';
 
+// Dodaj typ dla błędu Stripe
+interface StripeError extends Error {
+  type?: string;
+  message: string;
+  code?: string;
+}
+
 const stripe = new Stripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYpK8vjOhFyTfUFTmP1lKOTKYI4NIKvCGq3reYKoXf1aIxM00VNyd4jMU', {
   apiVersion: '2024-11-20.acacia',
 });
@@ -54,10 +61,11 @@ export async function POST(request: Request) {
           accountId: account.id,
           accountLink: accountLink.url,
         });
-      } catch (error: any) {
-        console.error('Stripe error details:', error.message);
+      } catch (error: unknown) {
+        const stripeError = error as StripeError;
+        console.error('Stripe error details:', stripeError.message);
         return NextResponse.json(
-          { error: `Failed to create Stripe account: ${error.message}` },
+          { error: `Failed to create Stripe account: ${stripeError.message}` },
           { status: 400 }
         );
       }
