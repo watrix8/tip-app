@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/app/config/firebase';
-import { useAuth } from '@/app/contexts/AuthContext'; // Dodajemy import useAuth
-import type { SettingsPageProps } from '@/app/types/user';
+import { db } from '@/lib/config/firebase';
+import { useAuth } from '@/lib/contexts/auth'; // Dodajemy import useAuth
+import type { SettingsPageProps } from '@/types/user';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const router = useRouter();

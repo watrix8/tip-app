@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/app/config/firebase';
-import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
+import { auth } from '@/lib/config/firebase';
+import { createOrUpdateUser } from '@/lib/utils/firebase';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;

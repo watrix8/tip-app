@@ -1,7 +1,7 @@
 import { LogOut, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { initializeStripeConnect, checkStripeAccountStatus } from '@/app/utils/stripeUtils';
-import { auth } from '@/app/config/firebase';
+import { initializeStripeConnect, checkStripeAccountStatus } from '@/lib/utils/stripe';
+import { auth } from '@/lib/config/firebase';
 import Link from 'next/link';
 import { Settings } from 'lucide-react';
 

@@ -1,11 +1,21 @@
-// src/app/onboarding/refresh/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { XCircle } from 'lucide-react';
 
-export default function OnboardingRefresh() {
+// Komponent ładowania
+const LoadingState = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <p className="mt-4 text-gray-600">Ładowanie...</p>
+    </div>
+  </div>
+);
+
+// Główny komponent zawartości
+const OnboardingRefreshContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showError, setShowError] = useState(false);
@@ -18,9 +28,9 @@ export default function OnboardingRefresh() {
       return;
     }
 
-    // Opóźniamy przekierowanie o 3 sekundy, żeby użytkownik mógł przeczytać komunikat
+    // Opóźniamy przekierowanie o 3 sekundy
     setTimeout(() => {
-      window.location.href = '/'; // Używamy window.location.href zamiast router.push
+      window.location.href = '/';
     }, 3000);
   }, [router, searchParams]);
 
@@ -53,5 +63,14 @@ export default function OnboardingRefresh() {
         <p className="mt-4 text-gray-600">Proces został przerwany. Przekierowywanie do panelu kelnera...</p>
       </div>
     </div>
+  );
+};
+
+// Główny komponent strony
+export default function OnboardingRefresh() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <OnboardingRefreshContent />
+    </Suspense>
   );
 }

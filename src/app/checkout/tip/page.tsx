@@ -1,11 +1,20 @@
 'use client';
 
-import React from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { ExternalLink } from 'lucide-react';
+import React from 'react';
 
-export default function TipPage() {
+// Loading Component
+const LoadingState = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+  </div>
+);
+
+// Main Content Component
+const TipPageContent = () => {
   const searchParams = useSearchParams();
   const waiterId = searchParams.get('waiterId');
   const name = searchParams.get('name');
@@ -19,7 +28,7 @@ export default function TipPage() {
       .toUpperCase();
   };
 
-  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tip/payment?waiterId=${waiterId}&name=${encodeURIComponent(name || '')}`;
+  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/tip/payment?waiterId=${waiterId}&name=${encodeURIComponent(name || '')}`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -60,7 +69,7 @@ export default function TipPage() {
             <p className="text-sm text-gray-500 mb-2">
               lub skorzystaj z bezpośredniego linku:
             </p>
-            <a
+            <a 
               href={tipPageUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -73,5 +82,14 @@ export default function TipPage() {
         </div>
       </div>
     </div>
+  );
+};
+
+// Main Page Component
+export default function TipPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <TipPageContent />
+    </Suspense>
   );
 }

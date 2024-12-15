@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   User 
 } from 'firebase/auth';
-import { auth } from '@/app/config/firebase';
+import { auth } from '@/lib/config/firebase';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {

@@ -1,19 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
 import { loadStripe, StripeError } from '@stripe/stripe-js';
-import { 
-  Elements, 
-  useStripe, 
-  useElements, 
-  PaymentElement 
-} from '@stripe/react-stripe-js';
-import { Alert, AlertDescription } from '../../../components/SimpleAlert';
+import { Elements } from '@stripe/react-stripe-js';
+import { PaymentForm } from './component/PaymentForm';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 interface Waiter {
   name: string;
@@ -21,76 +17,16 @@ interface Waiter {
   avatarUrl: string;
 }
 
-interface PaymentFormProps {
-  onSuccess: () => void;
-  onError: (error: StripeError | Error) => void;
-  termsAccepted: boolean;
-}
+// Loading State Component
+const LoadingState = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+  </div>
+);
 
-const PaymentForm = ({ onSuccess, onError, termsAccepted }: PaymentFormProps) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [error, setError] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!stripe || !elements || !termsAccepted) return;
-
-    setProcessing(true);
-    setError(null);
-
-    try {
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payment/success`,
-        },
-        redirect: 'if_required',
-      });
-
-      if (result.error) {
-        setError(result.error.message || 'Wystąpił błąd podczas płatności');
-        onError(result.error);
-      } else if (result.paymentIntent?.status === 'succeeded') {
-        onSuccess();
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Wystąpił nieoczekiwany błąd';
-      setError(errorMessage);
-      onError(error instanceof Error ? error : new Error(errorMessage));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 border rounded-lg">
-        <PaymentElement options={{
-          layout: { type: 'tabs' }
-        }} />
-      </div>
-      
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <button
-        type="submit"
-        disabled={!stripe || processing || !termsAccepted}
-        className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50"
-      >
-        <CreditCard className="w-5 h-5 mr-2" />
-        {processing ? 'Przetwarzanie...' : 'Zapłać'}
-      </button>
-    </form>
-  );
-};
-
-export default function TipPage() {
+// Main Content Component
+const PaymentPageContent = () => {
+  const searchParams = useSearchParams();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
@@ -100,10 +36,9 @@ export default function TipPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const searchParams = useSearchParams();
+
   const waiterId = searchParams.get('waiterId');
   const name = searchParams.get('name');
-
   const tipAmounts = [10, 20, 30] as const;
 
   useEffect(() => {
@@ -180,11 +115,7 @@ export default function TipPage() {
   };
 
   if (!waiter) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
@@ -310,5 +241,14 @@ export default function TipPage() {
         )}
       </div>
     </main>
+  );
+};
+
+// Main Page Component
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

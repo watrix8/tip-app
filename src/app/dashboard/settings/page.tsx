@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/app/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/auth';
 import { 
   doc, 
   getDoc, 
@@ -10,10 +10,10 @@ import {
   where,
   getDocs
 } from 'firebase/firestore';
-import { db } from '@/app/config/firebase';
-import { createOrUpdateUser } from '@/app/utils/firebaseUtils';
-import SettingsPage from '@/app/components/waitier/SettingsPage';
-import type { UserData } from '@/app/types/user';
+import { db } from '@/lib/config/firebase';
+import { createOrUpdateUser } from '@/lib/utils/firebase';
+import SettingsPage from '@/app/dashboard/components/SettingsPage';
+import type { UserData } from '@/types/user';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsPageWrapper() {

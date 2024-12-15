@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/contexts/AuthContext';
-import LoginButton from '@/app/components/auth/LoginButton';
-import RegisterForm from '@/app/components/auth/RegisterForm';
+import { useAuth } from '@/lib/contexts/auth';
+import LoginButton from '@/app/auth/components/LoginButton';
+import RegisterForm from '@/app/auth/components/RegisterForm';
 import dynamic from 'next/dynamic';
 
-const WaiterPanel = dynamic(() => import('@/app/waiter-panel/WaiterPanel'), {
+const WaiterPanel = dynamic(() => import('@/app/dashboard/components/WaiterPanel'), {
   ssr: false
 });
   

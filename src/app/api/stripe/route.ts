@@ -1,8 +1,8 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
-import { stripe } from '@/app/config/stripe';
+import { stripe } from '@/lib/config/stripe';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/app/config/firebase'; // Importujemy już zainicjalizowaną instancję
+import { db } from '@/lib/config/firebase'; // Importujemy już zainicjalizowaną instancję
 
 // Interfejs dla błędów Stripe
 interface StripeError extends Error {

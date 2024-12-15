@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/app/config/firebase';
-import LoginButton from '@/app/components/auth/LoginButton';
+import { auth } from '@/lib/config/firebase';
+import LoginButton from '@/app/auth/components/LoginButton';
 
 export default function LoginPage() {
   const [migrationError, setMigrationError] = useState('');

@@ -1,6 +1,6 @@
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
-import type { UserData } from '@/app/types/user';
+import type { UserData } from '@/types/user';
 
 const db = getFirestore(getApp());
 
