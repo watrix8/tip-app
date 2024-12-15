@@ -5,19 +5,19 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CreditCard, ArrowLeft } from 'lucide-react';
-import Image from 'next/image';
 import { loadStripe, StripeError } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { PaymentForm } from './component/PaymentForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/contexts/auth';
+import UserAvatar from '@/components/UserAvatar';
 
-const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 interface Waiter {
   name: string;
   id: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
 }
 
 const LoadingState = () => (
@@ -35,7 +35,6 @@ const PaymentPageContent = () => {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -55,22 +54,24 @@ const PaymentPageContent = () => {
 
       try {
         let waiterName = name;
+        let avatarUrl = null;
         
-        if (!waiterName) {
-          const docRef = doc(db, 'Users', waiterId);
-          const waiterDoc = await getDoc(docRef);
-          
-          if (waiterDoc.exists()) {
+        const docRef = doc(db, 'Users', waiterId);
+        const waiterDoc = await getDoc(docRef);
+        
+        if (waiterDoc.exists()) {
+          if (!waiterName) {
             waiterName = waiterDoc.data().name;
-          } else {
-            throw new Error('Nie znaleziono danych kelnera');
           }
+          avatarUrl = waiterDoc.data().avatarUrl || null;
+        } else {
+          throw new Error('Nie znaleziono danych kelnera');
         }
 
         const waiterData: Waiter = {
           name: decodeURIComponent(waiterName || ''),
-          id: waiterId || '',
-          avatarUrl: `https://example.com/avatars/${waiterId || ''}.jpg`,
+          id: waiterId,
+          avatarUrl: avatarUrl
         };
         setWaiter(waiterData);
       } catch (error) {
@@ -83,14 +84,6 @@ const PaymentPageContent = () => {
 
     initializePaymentPage();
   }, [authLoading, user, waiterId, name]);
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
-  };
 
   const isAmountSelected = (): boolean => {
     return selectedAmount !== null || (!!customAmount && Number(customAmount) > 0);
@@ -185,25 +178,12 @@ const PaymentPageContent = () => {
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden">
-              {!imageError ? (
-                <div className="relative w-24 h-24">
-                  <Image
-                    src={waiter.avatarUrl}
-                    alt={`Avatar ${waiter.name}`}
-                    fill
-                    className="object-cover"
-                    onError={() => setImageError(true)}
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-100">
-                  <span className="text-blue-600 text-2xl font-bold">
-                    {getInitials(waiter.name)}
-                  </span>
-                </div>
-              )}
-            </div>
+            <UserAvatar 
+              name={waiter.name} 
+              avatarUrl={waiter.avatarUrl}
+              size="lg"
+              className="shadow-lg"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Napiwek dla: {waiter.name}</h1>
         </div>
