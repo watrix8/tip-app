@@ -20,6 +20,7 @@ export default function WaiterPanelContent() {
   const [loading, setLoading] = useState(true);
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isStripeConfigLoading, setIsStripeConfigLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -139,6 +140,7 @@ export default function WaiterPanelContent() {
                   <button
                     onClick={async () => {
                       try {
+                        setIsStripeConfigLoading(true);
                         const response = await fetch('/api/stripe', {
                           method: 'POST',
                           headers: {
@@ -157,11 +159,21 @@ export default function WaiterPanelContent() {
                       } catch (err) {
                         console.error('Error:', err);
                         setError('Błąd podczas konfiguracji Stripe');
+                      } finally {
+                        setIsStripeConfigLoading(false);
                       }
                     }}
-                    className="mt-4 bg-yellow-800 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                    disabled={isStripeConfigLoading}
+                    className="mt-4 bg-yellow-800 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
-                    Skonfiguruj płatności
+                    {isStripeConfigLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                        Konfigurowanie...
+                      </>
+                    ) : (
+                      'Skonfiguruj płatności'
+                    )}
                   </button>
                 </div>
               </div>
