@@ -40,7 +40,7 @@ const OnboardingCompleteContent = () => {
           },
           body: JSON.stringify({ 
             action: 'check-account-status',
-            accountId: userId 
+            waiterId: userId 
           }),
         });
 

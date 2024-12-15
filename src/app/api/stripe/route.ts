@@ -51,16 +51,11 @@ export async function POST(request: Request) {
         }
 
         const account = await stripe.accounts.retrieve(userDoc.data().stripeAccountId);
-        const isEnabled = account.charges_enabled && account.payouts_enabled;
-
-        // Aktualizuj status w bazie danych
-        await updateDoc(userRef, {
-          stripeOnboardingStatus: isEnabled ? 'completed' : 'pending'
-        });
-
+        
         return NextResponse.json({
           hasAccount: true,
-          isEnabled: isEnabled
+          isEnabled: account.charges_enabled && account.payouts_enabled,
+          details_submitted: account.details_submitted
         });
       } catch (error) {
         console.error('Check account status error:', error);
@@ -115,8 +110,8 @@ export async function POST(request: Request) {
         console.log('Creating account link...');
         const accountLink = await stripe.accountLinks.create({
           account: account.id,
-          refresh_url: body.refreshUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
-          return_url: body.returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
+          refresh_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/onboarding/refresh?userId=${waiterId}`,
+          return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/onboarding/complete?userId=${waiterId}`,
           type: 'account_onboarding',
         });
 

@@ -21,7 +21,6 @@ export default function WaiterPanelContent() {
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isStripeConfigLoading, setIsStripeConfigLoading] = useState(false);
-  const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -39,22 +38,10 @@ export default function WaiterPanelContent() {
             stripeAccountId: data.stripeAccountId
           });
           
-          if (data.stripeAccountId) {
-            const response = await fetch('/api/stripe', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'check-account-status',
-                waiterId: user.uid,
-              }),
-            });
-
-            const stripeStatus = await response.json();
-            setHasStripeAccount(stripeStatus.isEnabled || false);
-            setOnboardingStatus(data.stripeOnboardingStatus);
-          }
+          setHasStripeAccount(
+            data.stripeAccountId && 
+            data.stripeOnboardingStatus === 'completed'
+          );
         }
         setLoading(false);
       } catch (err) {
@@ -99,7 +86,7 @@ export default function WaiterPanelContent() {
     }
   };
 
-  const showStripeSetup = !hasStripeAccount || onboardingStatus === 'pending';
+  const showStripeSetup = !hasStripeAccount;
 
   if (loading) {
     return (
