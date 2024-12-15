@@ -4,7 +4,7 @@ import { db } from '@/lib/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+const stripe = new Stripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYpK8vjOhFyTfUFTmP1lKOTKYI4NIKvCGq3reYKoXf1aIxM00VNyd4jMU', {
   apiVersion: '2024-11-20.acacia',
 });
 
