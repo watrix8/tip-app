@@ -1,17 +1,18 @@
 // src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import Stripe from 'stripe';
 
-// Dodaj typ dla błędu Stripe
+// Interfejs dla błędu Stripe
 interface StripeError extends Error {
   type?: string;
   message: string;
   code?: string;
 }
 
-const stripe = new Stripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYpK8vjOhFyTfUFTmP1lKOTKYI4NIKvCGq3reYKoXf1aIxM00VNyd4jMU', {
+// Inicjalizacja Stripe z zmiennej środowiskowej
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-11-20.acacia',
 });
 
@@ -31,8 +32,47 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sprawdzenie statusu konta
+    if (action === 'check-account-status') {
+      try {
+        const waiterRef = doc(db, 'waiters', waiterId);
+        const waiterDoc = await getDoc(waiterRef);
+        
+        if (!waiterDoc.exists() || !waiterDoc.data().stripeAccountId) {
+          return NextResponse.json({ hasAccount: false });
+        }
+
+        const account = await stripe.accounts.retrieve(waiterDoc.data().stripeAccountId);
+        return NextResponse.json({
+          hasAccount: true,
+          isEnabled: account.charges_enabled && account.payouts_enabled
+        });
+      } catch (error) {
+        const stripeError = error as StripeError;
+        return NextResponse.json(
+          { error: `Failed to check account status: ${stripeError.message}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Tworzenie konta Connect
     if (action === 'create-connect-account') {
       try {
+        // Najpierw sprawdź czy kelner już nie ma konta
+        const waiterRef = doc(db, 'waiters', waiterId);
+        const waiterDoc = await getDoc(waiterRef);
+        
+        if (waiterDoc.exists() && waiterDoc.data().stripeAccountId) {
+          const existingAccount = await stripe.accounts.retrieve(waiterDoc.data().stripeAccountId);
+          if (existingAccount.charges_enabled) {
+            return NextResponse.json({ 
+              accountId: waiterDoc.data().stripeAccountId,
+              alreadyEnabled: true 
+            });
+          }
+        }
+
         console.log('Creating Stripe account...');
         const account = await stripe.accounts.create({
           type: 'express',
@@ -47,6 +87,13 @@ export async function POST(request: Request) {
           },
         });
         console.log('Stripe account created:', account.id);
+
+        // Zapisz ID konta w Firestore
+        await setDoc(waiterRef, {
+          stripeAccountId: account.id,
+          stripeOnboardingStatus: 'pending',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
 
         console.log('Creating account link...');
         const accountLink = await stripe.accountLinks.create({
@@ -71,7 +118,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Istniejąca obsługa payment intent
+    // Tworzenie intencji płatności
     if (action === 'create-payment-intent') {
       const waiterRef = doc(db, 'waiters', waiterId);
       const waiterDoc = await getDoc(waiterRef);
@@ -91,16 +138,27 @@ export async function POST(request: Request) {
         );
       }
 
+      // Sprawdź czy konto jest w pełni skonfigurowane
+      const account = await stripe.accounts.retrieve(waiterData.stripeAccountId);
+      if (!account.charges_enabled) {
+        return NextResponse.json(
+          { error: 'Stripe account is not fully set up' },
+          { status: 400 }
+        );
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: body.amount * 100,
+        amount: body.amount * 100, // Konwersja na grosze
         currency: 'pln',
-        application_fee_amount: 50,
+        application_fee_amount: 50, // 50 groszy prowizji
         transfer_data: {
           destination: waiterData.stripeAccountId,
         },
       });
 
-      return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+      return NextResponse.json({ 
+        clientSecret: paymentIntent.client_secret 
+      });
     }
 
     return NextResponse.json(
