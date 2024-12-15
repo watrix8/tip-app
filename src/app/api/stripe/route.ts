@@ -29,7 +29,8 @@ export async function POST(request: Request) {
 
     const { action, waiterId, stripeAccountId } = body;
 
-    if (!waiterId) {
+    // Sprawdź waiterId tylko dla akcji, które go wymagają
+    if (action !== 'create-login-link' && !waiterId) {
       return NextResponse.json(
         { error: 'waiterId is required' },
         { status: 400 }
