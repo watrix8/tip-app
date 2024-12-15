@@ -40,7 +40,16 @@ const UserAvatar = ({ name, avatarUrl, size = 'md', className = '' }: UserAvatar
       .toUpperCase();
   };
 
-  if (!avatarUrl || imageError) {
+  const isValidImageUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  if (!avatarUrl || !isValidImageUrl(avatarUrl) || imageError) {
     return (
       <div className={`${sizeClasses[size]} rounded-full bg-blue-100 flex items-center justify-center ${className}`}>
         {name ? (
@@ -62,6 +71,8 @@ const UserAvatar = ({ name, avatarUrl, size = 'md', className = '' }: UserAvatar
         fill
         className="object-cover"
         onError={() => setImageError(true)}
+        unoptimized
+        sizes={`(max-width: 768px) 100vw, ${sizeClasses[size].split('w-')[1]}px`}
       />
     </div>
   );
