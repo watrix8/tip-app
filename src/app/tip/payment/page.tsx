@@ -1,10 +1,8 @@
-'use client';
-
 import React, { Suspense, useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
-import { useSearchParams } from 'next/navigation';
-import { CreditCard, ArrowLeft, X } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { CreditCard, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import { loadStripe, StripeError } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -26,9 +24,8 @@ const LoadingState = () => (
   </div>
 );
 
-type PaymentStatus = 'input' | 'processing' | 'success' | 'error';
-
 const PaymentPageContent = () => {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -39,7 +36,6 @@ const PaymentPageContent = () => {
   const [imageError, setImageError] = useState(false);
   const [waiter, setWaiter] = useState<Waiter | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('input');
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const waiterId = searchParams.get('waiterId');
@@ -104,7 +100,6 @@ const PaymentPageContent = () => {
   };
 
   const handlePayment = async () => {
-    setPaymentStatus('processing');
     console.log('HandlePayment called');
     console.log('Final amount:', getFinalAmount());
     
@@ -112,7 +107,6 @@ const PaymentPageContent = () => {
     if (!finalAmount || finalAmount <= 0 || !waiter || !termsAccepted) {
       console.log('Validation failed:', { finalAmount, waiter, termsAccepted });
       setPaymentError('Proszę wybrać kwotę napiwku i zaakceptować regulamin');
-      setPaymentStatus('error');
       return;
     }
 
@@ -139,34 +133,25 @@ const PaymentPageContent = () => {
       console.log('Response data:', data);
       setClientSecret(data.clientSecret);
       setPaymentError(null);
-      setPaymentStatus('input');
     } catch (error) {
       console.error('Payment error:', error);
       setPaymentError('Wystąpił błąd podczas inicjowania płatności');
-      setPaymentStatus('error');
+      router.push('/tip/error');
     }
   };
 
   const handleBack = () => {
     setClientSecret(null);
     setPaymentError(null);
-    setPaymentStatus('input');
-  };
-
-  const handleRetry = () => {
-    setPaymentStatus('input');
-    setPaymentError(null);
-    setClientSecret(null);
   };
 
   const handlePaymentSuccess = () => {
-    setPaymentStatus('success');
+    router.push('/tip/success');
   };
 
   const handlePaymentError = (error: StripeError | Error) => {
     console.error('Payment error:', error);
-    setPaymentError('Wystąpił błąd podczas przetwarzania płatności');
-    setPaymentStatus('error');
+    router.push('/tip/error');
   };
 
   if (loading || authLoading) {
@@ -188,66 +173,6 @@ const PaymentPageContent = () => {
           <p className="text-sm text-gray-500">
             Sprawdź poprawność linku lub spróbuj ponownie później.
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Success view
-  if (paymentStatus === 'success') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dziękujemy za napiwek!</h1>
-          <p className="text-gray-600 mb-6">
-            Twoja płatność została zrealizowana pomyślnie. Kelner {waiter.name} otrzyma Twój napiwek.
-          </p>
-          <button
-            onClick={() => window.close()}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Zamknij okno
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Error view
-  if (paymentStatus === 'error') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-              <X className="w-8 h-8 text-red-500" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Wystąpił błąd</h1>
-          <p className="text-gray-600 mb-6">
-            {paymentError || 'Nie udało się przetworzyć płatności. Spróbuj ponownie później.'}
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={handleRetry}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Spróbuj ponownie
-            </button>
-            <button
-              onClick={() => window.close()}
-              className="w-full bg-gray-200 text-gray-800 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Zamknij okno
-            </button>
-          </div>
         </div>
       </div>
     );
