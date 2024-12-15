@@ -2,44 +2,59 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Sprawdź wszystkie możliwe nazwy cookie sesji Firebase
+  // Sprawdź ciasteczko sesji Firebase
   const allCookies = request.cookies.getAll();
   const firebaseCookie = allCookies.find(cookie => 
     cookie.name.startsWith('firebase:authUser:')
   );
   
-  console.log('Middleware executing:', {
-    path: request.nextUrl.pathname,
+  const path = request.nextUrl.pathname;
+  console.log('Middleware path check:', {
+    path,
     hasSession: !!firebaseCookie,
-    cookieName: firebaseCookie?.name,
-    allCookies: allCookies.map(c => c.name)
+    cookieName: firebaseCookie?.name
   });
 
+  // Definiujemy ścieżki publiczne i chronione
   const publicPaths = ['/login', '/register'];
-  const isPublicPath = publicPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  );
+  const protectedPaths = ['/dashboard', '/settings'];
+  
+  const isPublicPath = publicPaths.some(p => path.startsWith(p));
+  const isProtectedPath = protectedPaths.some(p => path.startsWith(p));
 
-  // Jeśli jest sesja i jesteśmy na stronie publicznej
+  // Jeśli użytkownik jest zalogowany i próbuje dostać się do publicznej ścieżki
   if (firebaseCookie && isPublicPath) {
+    console.log('Logged in user trying to access public path - redirecting to dashboard');
     return NextResponse.redirect(new URL('/dashboard/waiter', request.url));
   }
 
-  // Jeśli nie ma sesji i próbujemy dostać się do chronionych ścieżek
-  if (!firebaseCookie && !isPublicPath && request.nextUrl.pathname !== '/') {
-    console.log('Redirecting to login due to no session');
+  // Jeśli użytkownik nie jest zalogowany i próbuje dostać się do chronionej ścieżki
+  if (!firebaseCookie && isProtectedPath) {
+    console.log('Unauthenticated user trying to access protected path - redirecting to login');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Jeśli użytkownik nie jest zalogowany i jest na stronie głównej
+  if (!firebaseCookie && path === '/') {
+    console.log('Unauthenticated user at root - redirecting to login');
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  console.log('Allowing request to proceed');
   return NextResponse.next();
 }
 
+// Zaktualizuj konfigurację matchera
 export const config = {
   matcher: [
-    '/',
-    '/login',
-    '/register',
-    '/dashboard/:path*',
-    '/settings/:path*',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public directory)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
 };

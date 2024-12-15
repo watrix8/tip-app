@@ -44,12 +44,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
+      
+      // Zapisz cookie sesji
+      document.cookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web=${userCredential.user.uid}; path=/; max-age=7200`;
+      
+      // Poczekaj na zmianę stanu
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Przekieruj do dashboardu
       router.push('/dashboard/waiter');
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
