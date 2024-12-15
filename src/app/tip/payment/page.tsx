@@ -148,12 +148,12 @@ const PaymentPageContent = () => {
   };
 
   const handlePaymentSuccess = () => {
-    router.push('/tip/success');
+    router.push('/tip/payment/success');
   };
 
   const handlePaymentError = (error: StripeError | Error) => {
     console.error('Payment error:', error);
-    router.push('/tip/error');
+    router.push('/tip/payment/error');
   };
 
   if (loading || authLoading) {
