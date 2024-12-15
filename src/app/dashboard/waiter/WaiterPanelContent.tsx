@@ -43,6 +43,15 @@ export default function WaiterPanelContent() {
     checkStripeAccount();
   }, [user]);
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      setError('Błąd podczas wylogowywania');
+    }
+  };
+
   const fetchTipHistory = () => {
     const mockData = [
       { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
@@ -191,12 +200,12 @@ export default function WaiterPanelContent() {
             </Link>
 
             <button
-              onClick={signOut}
-              className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Wyloguj się
-            </button>
+  onClick={handleSignOut}
+  className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+>
+  <LogOut className="w-5 h-5 mr-2" />
+  Wyloguj się
+</button>
           </div>
         </div>
       </div>

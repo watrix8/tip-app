@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   onAuthStateChanged,
   User,
   setPersistence,
@@ -11,37 +12,27 @@ import {
 import { auth } from '@/lib/config/firebase';
 import { useRouter } from 'next/navigation';
 
-// Definiujemy interfejs dla kontekstu
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
   signOut: () => Promise<void>;
-} 
+}
 
-// Tworzymy kontekst
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-   
-  useEffect(() => { 
+
+  useEffect(() => {
     const setupAuth = async () => {
-      console.log('Setting up auth...');
-      
       await setPersistence(auth, browserLocalPersistence);
-      console.log('Auth persistence set');
       
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        console.log('Auth state changed:', {
-          user: firebaseUser ? 'exists' : 'null',
-          email: firebaseUser?.email
-        });
+        console.log('Auth state changed:', firebaseUser?.email);
         setUser(firebaseUser);
-
         setLoading(false);
       });
 
@@ -55,10 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
-      
-      // Ustaw cookie sesji po zalogowaniu
-      document.cookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web=${userCredential.user.uid}; path=/; max-age=7200`;
-      
       router.push('/dashboard/waiter');
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
@@ -66,35 +53,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const signOut = async () => {
     try {
-      await signOut();
-      localStorage.removeItem('user');
-      // Usuń cookie sesji
-      document.cookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      await firebaseSignOut(auth);
+      
+      // Czyścimy localStorage
+      localStorage.clear();
+      
+      // Usuwamy wszystkie ciasteczka związane z Firebase
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.split('=');
+        if (name.trim().startsWith('firebase:')) {
+          document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+      });
+
+      // Czekamy na zmianę stanu autoryzacji
+      await new Promise<void>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (!user) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+
+      // Przekierowujemy do strony logowania
+      console.log('Redirecting to login page...');
       router.push('/login');
+      router.refresh(); // Wymuszamy pełne odświeżenie routera
+      
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       throw error;
     }
   };
 
-  const signOut = async () => {
-    try {
-      await auth.signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, signOut }}>
+    <AuthContext.Provider value={{ user, loading, login, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook do używania kontekstu auth
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
