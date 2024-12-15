@@ -16,27 +16,21 @@ export function middleware(request: NextRequest) {
   });
 
   // Definiujemy ścieżki publiczne i chronione
-  const publicPaths = ['/login', '/register'];
+  const publicPaths = ['/', '/login', '/register'];
   const protectedPaths = ['/dashboard', '/settings'];
   
-  const isPublicPath = publicPaths.some(p => path.startsWith(p));
+  const isPublicPath = publicPaths.some(p => path === p || path.startsWith(p));
   const isProtectedPath = protectedPaths.some(p => path.startsWith(p));
 
-  // Jeśli użytkownik jest zalogowany i próbuje dostać się do publicznej ścieżki
-  if (firebaseCookie && isPublicPath) {
-    console.log('Logged in user trying to access public path - redirecting to dashboard');
+  // Jeśli użytkownik jest zalogowany i próbuje dostać się do publicznej ścieżki logowania/rejestracji
+  if (firebaseCookie && (path === '/login' || path === '/register')) {
+    console.log('Logged in user trying to access auth path - redirecting to dashboard');
     return NextResponse.redirect(new URL('/dashboard/waiter', request.url));
   }
 
   // Jeśli użytkownik nie jest zalogowany i próbuje dostać się do chronionej ścieżki
   if (!firebaseCookie && isProtectedPath) {
     console.log('Unauthenticated user trying to access protected path - redirecting to login');
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Jeśli użytkownik nie jest zalogowany i jest na stronie głównej
-  if (!firebaseCookie && path === '/') {
-    console.log('Unauthenticated user at root - redirecting to login');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
