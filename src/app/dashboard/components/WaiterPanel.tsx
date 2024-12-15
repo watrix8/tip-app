@@ -204,7 +204,7 @@ export default function WaiterPanel({ currentUser, onLogout }: WaiterPanelProps)
           className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
         >
           <LogOut className="w-5 h-5 mr-2" />
-          Wyloguj się
+          Wyloguj się11111111
         </button>
       </div>
     </div>
