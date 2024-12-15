@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/settings/:path*',
-    '/waiter-panel/:path*',
+    '/dashboard/:path*',  // Dodajemy tę linię
     '/login',
     '/register',
   ],
