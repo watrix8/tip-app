@@ -1,4 +1,5 @@
-import './globals.css'
+import { AuthProvider } from '@/lib/contexts/auth';
+import './globals.css';
 
 export default function RootLayout({
   children,
@@ -7,7 +8,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
-  )
+  );
 }

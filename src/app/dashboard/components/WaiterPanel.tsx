@@ -4,16 +4,13 @@ import { initializeStripeConnect, checkStripeAccountStatus } from '@/lib/utils/s
 import { auth } from '@/lib/config/firebase';
 import Link from 'next/link';
 import { Settings } from 'lucide-react';
+import type { UserData } from '@/types/user';
 
 //import StripeExpressDashboard from './dashboard/StripeExpressDashboard';
 
 interface WaiterPanelProps {
   onLogout: () => void;
-  currentUser: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
+  currentUser: UserData | null;  // Zmieniamy typ na UserData
 }
 
 // Przykładowy interfejs dla historii napiwków
