@@ -62,10 +62,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
       const fileName = `avatar-${Date.now()}.${fileExtension}`;
       const avatarRef = ref(storage, `avatars/${currentUser.id}/${fileName}`);
       
-      // Pobierz token
-      const token = await currentAuthUser.getIdToken();
-      
-      // Upload pliku z tokenem
+      // Upload pliku z metadanymi
       const metadata = {
         customMetadata: {
           userId: currentUser.id
@@ -74,7 +71,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
       
       await uploadBytes(avatarRef, file, metadata);
       
-      // Pobierz URL z tokenem dostępu
+      // Pobierz URL
       const downloadURL = await getDownloadURL(avatarRef);
       console.log('New avatar URL:', downloadURL);
       
