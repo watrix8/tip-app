@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/contexts/auth';
 import type { SettingsPageProps } from '@/types/user';
 import Image from 'next/image';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth } from '@/lib/config/firebase';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const router = useRouter();
@@ -45,6 +46,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
     const file = e.target.files?.[0];
     if (!file || !currentUser?.id) return;
 
+    // Sprawdź czy użytkownik jest zalogowany
+    const currentAuthUser = auth.currentUser;
+    if (!currentAuthUser) {
+      setError('Musisz być zalogowany aby zmienić avatar');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -54,24 +62,33 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
       const fileName = `avatar-${Date.now()}.${fileExtension}`;
       const avatarRef = ref(storage, `avatars/${currentUser.id}/${fileName}`);
       
-      // Upload pliku
-      await uploadBytes(avatarRef, file);
+      // Pobierz token
+      const token = await currentAuthUser.getIdToken();
       
-      // Pobierz pełny URL z tokenem dostępu
+      // Upload pliku z tokenem
+      const metadata = {
+        customMetadata: {
+          userId: currentUser.id
+        }
+      };
+      
+      await uploadBytes(avatarRef, file, metadata);
+      
+      // Pobierz URL z tokenem dostępu
       const downloadURL = await getDownloadURL(avatarRef);
       console.log('New avatar URL:', downloadURL);
       
       // Aktualizuj w bazie danych
       const userRef = doc(db, 'Users', currentUser.id);
       await updateDoc(userRef, {
-        avatarUrl: downloadURL // To będzie pełny URL z tokenem dostępu
+        avatarUrl: downloadURL
       });
       
       setAvatarUrl(downloadURL);
       
     } catch (err) {
       console.error('Error uploading avatar:', err);
-      setError('Wystąpił błąd podczas zapisywania avatara');
+      setError('Wystąpił błąd podczas zapisywania avatara. Spróbuj ponownie.');
     } finally {
       setIsLoading(false);
     }
