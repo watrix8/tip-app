@@ -1,3 +1,5 @@
+'use client';
+
 import React, { Suspense, useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
