@@ -39,7 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Attempting login with:', email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
-      router.push('/dashboard/waiter');
+      
+      // Używamy window.location.href aby wymusić pełne przeładowanie
+      window.location.href = '/dashboard/waiter';
+      
+      // Alternatywnie, możemy użyć router.push z opcją replace
+      // router.push('/dashboard/waiter', { replace: true });
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
