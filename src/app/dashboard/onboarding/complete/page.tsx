@@ -53,7 +53,7 @@ const OnboardingCompleteContent = () => {
         if (!accountStatus.details_submitted || 
             !accountStatus.payouts_enabled || 
             !accountStatus.charges_enabled) {
-          window.location.href = `/onboarding/refresh?userId=${userId}`;
+          window.location.href = `/dashboard/onboarding/refresh?userId=${userId}`;
           return;
         }
 
