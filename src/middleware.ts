@@ -5,10 +5,10 @@ export function middleware(request: NextRequest) {
   // Sprawdzamy zarówno cookie jak i localStorage
   const session = request.cookies.get('firebase:authUser');
   
-  // Dodajemy debug logi
   console.log('Middleware checking auth:', {
     path: request.nextUrl.pathname,
     hasSession: !!session,
+    cookies: request.cookies.getAll(),
   });
 
   // Lista ścieżek publicznych
@@ -17,15 +17,14 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Przekierowania tylko dla ścieżek chronionych
-  if (!session && !isPublicPath && request.nextUrl.pathname !== '/') {
-    console.log('Redirecting to login - no session');
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Jeśli użytkownik jest zalogowany i próbuje dostać się do strony głównej
+  if (session && request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard/waiter', request.url));
   }
 
-  if (session && isPublicPath) {
-    console.log('Redirecting to dashboard - user has session');
-    return NextResponse.redirect(new URL('/dashboard/waiter', request.url));
+  // Przekierowania tylko dla ścieżek chronionych
+  if (!session && !isPublicPath && request.nextUrl.pathname !== '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();
