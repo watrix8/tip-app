@@ -23,7 +23,7 @@ interface TipHistory {
   date: Date;
 }
 
-export default function WaiterPanel({ onLogout, currentUser }: WaiterPanelProps) {
+export default function WaiterPanel({ currentUser, onLogout }: WaiterPanelProps) {
   const [isStripeEnabled, setIsStripeEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);

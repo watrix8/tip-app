@@ -40,11 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
       
-      // Używamy window.location.href aby wymusić pełne przeładowanie
+      // Dodajmy małe opóźnienie aby Firebase miało czas na zapisanie cookie
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Używamy window.location.href zamiast router.push
       window.location.href = '/dashboard/waiter';
       
-      // Alternatywnie, możemy użyć router.push z opcją replace
-      // router.push('/dashboard/waiter', { replace: true });
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
