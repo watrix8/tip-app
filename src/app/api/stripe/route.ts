@@ -11,7 +11,23 @@ const stripe = new Stripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYp
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('Received request body:', body);
+
     const { action, waiterId, refreshUrl, returnUrl } = body;
+
+    if (!waiterId) {
+      return NextResponse.json(
+        { error: 'waiterId is required' },
+        { status: 400 }
+      );
+    }
+
+    if (action === 'create-connect-account' && (!refreshUrl || !returnUrl)) {
+      return NextResponse.json(
+        { error: 'refreshUrl and returnUrl are required for connect account creation' },
+        { status: 400 }
+      );
+    }
 
     // Dodajemy obsługę tworzenia konta Connect
     if (action === 'create-connect-account') {

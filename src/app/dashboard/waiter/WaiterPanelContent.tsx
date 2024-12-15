@@ -2,45 +2,55 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/contexts/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
-import WaiterPanel from '@/app/dashboard/components/WaiterPanel';
-import type { UserData } from '@/types/user';
 
 export default function WaiterPanelContent() {
-  const { user, logout } = useAuth();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user?.uid) return;
-
+    const initializeStripeConnect = async () => {
       try {
-        const userDoc = await getDoc(doc(db, 'Users', user.uid));
-        if (userDoc.exists()) {
-          setUserData({
-            id: userDoc.id,
-            ...userDoc.data()
-          } as UserData);
+        const response = await fetch('/api/stripe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create-connect-account',
+            waiterId: user?.uid,
+            refreshUrl: `${window.location.origin}/dashboard/waiter`,
+            returnUrl: `${window.location.origin}/dashboard/waiter`,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to initialize Stripe Connect');
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
+
+        const data = await response.json();
+        if (data.accountLink) {
+          window.location.href = data.accountLink;
+        }
+      } catch (err) {
+        console.error('Error initializing Stripe Connect:', err);
+        setError('Błąd podczas konfiguracji Stripe');
       }
     };
 
-    fetchUserData();
+    if (user) {
+      initializeStripeConnect();
+    }
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-      </div>
-    );
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
   }
 
-  return <WaiterPanel currentUser={userData} onLogout={logout} />;
+  return (
+    <div className="p-4">
+      <h1>Panel Kelnera</h1>
+      <p>Konfiguracja konta Stripe w toku...</p>
+    </div>
+  );
 }
