@@ -28,7 +28,7 @@ const TipPageContent = () => {
       .toUpperCase();
   };
 
-  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/tip/payment?waiterId=${waiterId}&name=${encodeURIComponent(name || '')}`;
+  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tip/payment?waiterId=${waiterId}&name=${encodeURIComponent(name || '')}`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
