@@ -8,15 +8,10 @@ import { LogOut, AlertCircle, ExternalLink, Settings } from 'lucide-react';
 import Link from 'next/link';
 import UserAvatar from '@/components/UserAvatar';
 
-interface TipHistory {
-  id: string;
-  amount: number;
-  date: Date;
-}
-
 interface UserData {
   name: string;
   avatarUrl: string | null;
+  stripeAccountId?: string;
 }
 
 export default function WaiterPanelContent() {
@@ -24,7 +19,6 @@ export default function WaiterPanelContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
-  const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
@@ -36,14 +30,15 @@ export default function WaiterPanelContent() {
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
+          const data = userDoc.data();
           setUserData({
-            name: userDoc.data().name,
-            avatarUrl: userDoc.data().avatarUrl
+            name: data.name,
+            avatarUrl: data.avatarUrl,
+            stripeAccountId: data.stripeAccountId
           });
           
-          if (userDoc.data().stripeAccountId) {
+          if (data.stripeAccountId) {
             setHasStripeAccount(true);
-            fetchTipHistory();
           }
         }
         setLoading(false);
@@ -66,13 +61,26 @@ export default function WaiterPanelContent() {
     }
   };
 
-  const fetchTipHistory = () => {
-    const mockData = [
-      { id: '1', amount: 10, date: new Date('2024-03-14T12:30:00') },
-      { id: '2', amount: 15, date: new Date('2024-03-14T15:45:00') },
-      { id: '3', amount: 20, date: new Date('2024-03-13T18:20:00') },
-    ];
-    setTipHistory(mockData);
+  const handleStripeLoginClick = async () => {
+    try {
+      const response = await fetch('/api/stripe/login-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stripeAccountId: userData?.stripeAccountId
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Error getting Stripe login link:', err);
+      setError('Nie udało się otworzyć panelu Stripe');
+    }
   };
 
   if (loading) {
@@ -111,7 +119,7 @@ export default function WaiterPanelContent() {
                 size="lg"
               />
               <h1 className="text-2xl font-bold text-gray-900">
-                Witaj {userData?.name || user?.displayName}
+                Witaj {userData?.name || user?.displayName}!
               </h1>
             </div>
           </div>
@@ -159,53 +167,38 @@ export default function WaiterPanelContent() {
             </div>
           ) : (
             <>
-              <div className="border-t border-gray-200 pt-6 mb-6">
-                <div className="text-center">
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    Twoja strona do napiwków
-                  </h4>
-                  <button
-                    onClick={() => {
-                      const tipUrl = `${window.location.origin}/tip?waiterId=${user?.uid}&name=${encodeURIComponent(user?.displayName || '')}`;
-                      window.open(tipUrl, '_blank', 'noopener,noreferrer');
-                    }}
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <span className="mr-2">Otwórz stronę napiwków</span>
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
+              <div className="space-y-4">
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <div className="text-center">
+                    <h4 className="font-semibold text-gray-900 mb-4">
+                      Twoja strona do napiwków
+                    </h4>
+                    <button
+                      onClick={() => {
+                        const tipUrl = `${window.location.origin}/tip?waiterId=${user?.uid}&name=${encodeURIComponent(userData?.name || '')}`;
+                        window.open(tipUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <span className="mr-2">Otwórz stronę napiwków</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t border-gray-200 pt-6">
-                <h4 className="font-semibold text-gray-900 mb-4 text-center">
-                  Historia napiwków
-                </h4>
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Data
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Kwota
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {tipHistory.map((tip) => (
-                        <tr key={tip.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {tip.date.toLocaleDateString('pl-PL')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                            {tip.amount.toFixed(2)} zł
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="text-center">
+                    <h4 className="font-semibold text-gray-900 mb-4">
+                      Panel Stripe
+                    </h4>
+                    <button
+                      onClick={handleStripeLoginClick}
+                      className="inline-flex items-center px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      <span className="mr-2">Otwórz panel Stripe</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
@@ -221,12 +214,12 @@ export default function WaiterPanelContent() {
             </Link>
 
             <button
-  onClick={handleSignOut}
-  className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
->
-  <LogOut className="w-5 h-5 mr-2" />
-  Wyloguj się
-</button>
+              onClick={handleSignOut}
+              className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+            >
+              <LogOut className="w-5 h-5 mr-2" />
+              Wyloguj się
+            </button>
           </div>
         </div>
       </div>
