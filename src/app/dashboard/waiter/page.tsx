@@ -1,7 +1,7 @@
 'use client';
 
-import ClientAuthProvider from '@/app/components/ClientAuthProvider';
-import WaiterPanelContent from './WaiterPanelContent';
+import ClientAuthProvider from '@/components/ClientAuthProvider';
+import WaiterPanelContent from '@/app/dashboard/waiter/WaiterPanelContent';
 
 export default function WaiterPage() {
   return (
@@ -9,4 +9,4 @@ export default function WaiterPage() {
       <WaiterPanelContent />
     </ClientAuthProvider>
   );
-}
+} 
