@@ -9,7 +9,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { PaymentForm } from './component/PaymentForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = loadStripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYpK8vjOhFyTfUFTmP1lKOTKYI4NIKvCGq3reYKoXf1aIxM00VNyd4jMU');
 
 interface Waiter {
   name: string;
