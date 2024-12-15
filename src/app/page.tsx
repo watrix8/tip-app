@@ -13,7 +13,7 @@ export default function Home() {
       if (user) {
         router.push('/dashboard/waiter');
       } else {
-        router.push('/login');
+        //router.push('/login');
       }
     }
   }, [user, loading, router]);
