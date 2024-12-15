@@ -190,13 +190,13 @@ export default function WaiterPanelContent() {
                 <div className="border-t border-gray-200 pt-6">
                   <div className="text-center">
                     <h4 className="font-semibold text-gray-900 mb-4">
-                      Panel Stripe
+                      Historia napiwków
                     </h4>
                     <button
                       onClick={handleStripeLoginClick}
-                      className="inline-flex items-center px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                      className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                     >
-                      <span className="mr-2">Otwórz panel Stripe</span>
+                      <span className="mr-2">Zobacz historię napiwków</span>
                       <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
