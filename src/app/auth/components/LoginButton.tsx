@@ -2,27 +2,31 @@
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
-import { useAuth } from '@/lib/contexts/auth'; // Zmieniamy import na useAuth
+import { useAuth } from '@/lib/contexts/auth';
 import { FirebaseError } from 'firebase/app';
+import { useRouter } from 'next/navigation';
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth(); // Używamy hooka useAuth
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       console.log('Próba logowania dla:', email);
-      await login(email, password); // Używamy funkcji login z kontekstu auth
-      console.log('Logowanie udane - oczekiwanie na przekierowanie');
+      await login(email, password);
+      console.log('Logowanie udane - przekierowuję...');
+      setTimeout(() => {
+        router.push('/dashboard/waiter');
+      }, 100);
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
       if (err instanceof FirebaseError) {
         console.log('Firebase Error Code:', err.code);
-        console.log('Firebase Error Message:', err.message);
         switch (err.code) {
           case 'auth/invalid-credential':
             setError('Nieprawidłowy email lub hasło.');
