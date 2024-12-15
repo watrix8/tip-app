@@ -11,10 +11,48 @@ const stripe = new Stripe('sk_test_51QVeM9I7OiRMQyLiHQm1v50URNMyoaCwbToD0MAV5pYp
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, waiterId } = body;
+    const { action, waiterId, refreshUrl, returnUrl } = body;
 
+    // Dodajemy obsługę tworzenia konta Connect
+    if (action === 'create-connect-account') {
+      try {
+        // Tworzenie konta Stripe Connect
+        const account = await stripe.accounts.create({
+          type: 'express',
+          country: 'PL',
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+          business_type: 'individual',
+          metadata: {
+            waiterId,
+          },
+        });
+
+        // Tworzenie linku do onboardingu
+        const accountLink = await stripe.accountLinks.create({
+          account: account.id,
+          refresh_url: refreshUrl,
+          return_url: returnUrl,
+          type: 'account_onboarding',
+        });
+
+        return NextResponse.json({
+          accountId: account.id,
+          accountLink: accountLink.url,
+        });
+      } catch (error) {
+        console.error('Error creating Stripe account:', error);
+        return NextResponse.json(
+          { error: 'Failed to create Stripe account' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Istniejąca obsługa payment intent
     if (action === 'create-payment-intent') {
-      // Sprawdź czy kelner istnieje i ma konto Stripe
       const waiterRef = doc(db, 'waiters', waiterId);
       const waiterDoc = await getDoc(waiterRef);
       
@@ -33,11 +71,10 @@ export async function POST(request: Request) {
         );
       }
 
-      // Utwórz PaymentIntent
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: body.amount * 100, // Konwersja na centy
+        amount: body.amount * 100,
         currency: 'pln',
-        application_fee_amount: 50, // 50 groszy prowizji
+        application_fee_amount: 50,
         transfer_data: {
           destination: waiterData.stripeAccountId,
         },
