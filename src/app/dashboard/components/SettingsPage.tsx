@@ -49,30 +49,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
     setError('');
 
     try {
-      // Inicjalizacja Firebase Storage
       const storage = getStorage();
-      
-      // Tworzenie unikalnej nazwy pliku
       const fileExtension = file.name.split('.').pop();
       const fileName = `avatar-${Date.now()}.${fileExtension}`;
-      
-      // Referencja do miejsca w Storage
       const avatarRef = ref(storage, `avatars/${currentUser.id}/${fileName}`);
       
       // Upload pliku
       await uploadBytes(avatarRef, file);
       
-      // Pobranie publicznego URL
+      // Pobierz pełny URL z tokenem dostępu
       const downloadURL = await getDownloadURL(avatarRef);
-      console.log('Uploaded avatar URL:', downloadURL);
+      console.log('New avatar URL:', downloadURL);
       
-      // Aktualizacja URL w bazie danych
+      // Aktualizuj w bazie danych
       const userRef = doc(db, 'Users', currentUser.id);
       await updateDoc(userRef, {
-        avatarUrl: downloadURL
+        avatarUrl: downloadURL // To będzie pełny URL z tokenem dostępu
       });
       
-      // Aktualizacja stanu komponentu
       setAvatarUrl(downloadURL);
       
     } catch (err) {
