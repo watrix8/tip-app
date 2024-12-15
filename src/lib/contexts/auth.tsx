@@ -35,14 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         console.log('Auth state changed:', firebaseUser?.email);
         
-        if (firebaseUser) {
-          // Sprawdzamy aktualną ścieżkę
-          const currentPath = window.location.pathname;
-          if (currentPath === '/login') {
-            console.log('Redirecting from login to waiter panel');
-            window.location.href = '/dashboard/waiter';
-          }
-        }
       });
 
       return () => unsubscribe();
@@ -54,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
       
-      // Zapisujemy dodatkowe informacje w localStorage
       localStorage.setItem('userEmail', userCredential.user.email || '');
       
       window.location.href = '/dashboard/waiter';
