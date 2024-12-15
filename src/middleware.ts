@@ -19,7 +19,6 @@ export function middleware(request: NextRequest) {
   const publicPaths = ['/', '/login', '/register'];
   const protectedPaths = ['/dashboard', '/settings'];
   
-  const isPublicPath = publicPaths.some(p => path === p || path.startsWith(p));
   const isProtectedPath = protectedPaths.some(p => path.startsWith(p));
 
   // Jeśli użytkownik jest zalogowany i próbuje dostać się do publicznej ścieżki logowania/rejestracji
