@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getFirestore } from 'firebase/firestore';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import Stripe from 'stripe';
 
@@ -44,13 +44,23 @@ export async function POST(request: Request) {
         const userDoc = await getDoc(userRef);
         
         if (!userDoc.exists() || !userDoc.data().stripeAccountId) {
-          return NextResponse.json({ hasAccount: false });
+          return NextResponse.json({ 
+            hasAccount: false,
+            isEnabled: false 
+          });
         }
 
         const account = await stripe.accounts.retrieve(userDoc.data().stripeAccountId);
+        const isEnabled = account.charges_enabled && account.payouts_enabled;
+
+        // Aktualizuj status w bazie danych
+        await updateDoc(userRef, {
+          stripeOnboardingStatus: isEnabled ? 'completed' : 'pending'
+        });
+
         return NextResponse.json({
           hasAccount: true,
-          isEnabled: account.charges_enabled && account.payouts_enabled
+          isEnabled: isEnabled
         });
       } catch (error) {
         console.error('Check account status error:', error);

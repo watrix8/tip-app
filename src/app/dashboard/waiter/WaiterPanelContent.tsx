@@ -21,6 +21,7 @@ export default function WaiterPanelContent() {
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isStripeConfigLoading, setIsStripeConfigLoading] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -39,7 +40,20 @@ export default function WaiterPanelContent() {
           });
           
           if (data.stripeAccountId) {
-            setHasStripeAccount(true);
+            const response = await fetch('/api/stripe', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'check-account-status',
+                waiterId: user.uid,
+              }),
+            });
+
+            const stripeStatus = await response.json();
+            setHasStripeAccount(stripeStatus.isEnabled || false);
+            setOnboardingStatus(data.stripeOnboardingStatus);
           }
         }
         setLoading(false);
@@ -85,6 +99,8 @@ export default function WaiterPanelContent() {
     }
   };
 
+  const showStripeSetup = !hasStripeAccount || onboardingStatus === 'pending';
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -126,7 +142,7 @@ export default function WaiterPanelContent() {
             </div>
           </div>
 
-          {!hasStripeAccount ? (
+          {showStripeSetup ? (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-6">
               <div className="flex">
                 <AlertCircle className="h-5 w-5 text-yellow-400" />
