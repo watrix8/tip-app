@@ -10,6 +10,7 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/config/firebase';
+import { useRouter } from 'next/navigation';
 
 // Definiujemy interfejs dla kontekstu
 interface AuthContextType {
@@ -25,16 +26,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Ustawiamy persystencję na początku
     setPersistence(auth, browserLocalPersistence).then(() => {
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        console.log('Auth state changed:', firebaseUser?.email);
         setUser(firebaseUser);
         setLoading(false);
         
         console.log('Auth state changed:', firebaseUser?.email);
         
+        // Usuwamy automatyczne przekierowanie stąd, zostawiamy je tylko w funkcji login
+        // if (firebaseUser) {
+        //   const currentPath = window.location.pathname;
+        //   if (currentPath === '/login') {
+        //     console.log('Redirecting from login to waiter panel');
+        //     window.location.href = '/dashboard/waiter';
+        //   }
+        // }
       });
 
       return () => unsubscribe();
@@ -45,10 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
-      
-      localStorage.setItem('userEmail', userCredential.user.email || '');
-      
-      window.location.href = '/dashboard/waiter';
+      router.push('/dashboard/waiter');
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
@@ -58,9 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
-      localStorage.removeItem('user');
-      console.log('Logout successful, redirecting to login');
-      window.location.href = '/login'; // Używamy bezpośredniego przekierowania przy wylogowaniu
+      localStorage.removeItem('userEmail');
+      router.push('/login');
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       throw error;
