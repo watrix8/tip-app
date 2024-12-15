@@ -72,7 +72,7 @@ const OnboardingCompleteContent = () => {
         setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
         
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/dashboard/waiter';
         }, 3000);
 
       } catch (error) {

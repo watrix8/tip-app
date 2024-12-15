@@ -28,9 +28,8 @@ const OnboardingRefreshContent = () => {
       return;
     }
 
-    // Opóźniamy przekierowanie o 3 sekundy
     setTimeout(() => {
-      window.location.href = '/';
+      window.location.href = '/dashboard/waiter';
     }, 3000);
   }, [router, searchParams]);
 
@@ -45,7 +44,7 @@ const OnboardingRefreshContent = () => {
           </p>
           <button
             onClick={() => {
-              window.location.href = '/';
+              window.location.href = '/dashboard/waiter';
             }}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
