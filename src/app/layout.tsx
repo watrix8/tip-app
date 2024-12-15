@@ -1,13 +1,18 @@
 import './globals.css'
+import { AuthProvider } from '@/lib/contexts/auth'
 
-export default function DashboardLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-white">
-      {children}
-    </div>
+    <html lang="pl">
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
   )
 }
