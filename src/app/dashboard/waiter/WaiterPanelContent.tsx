@@ -20,6 +20,18 @@ export default function WaiterPanelContent() {
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
 
+  console.log('WaiterPanelContent rendered', { 
+    user: user ? 'exists' : 'null',
+    userId: user?.uid 
+  });
+
+  useEffect(() => {
+    console.log('Auth state changed', {
+      user: user ? 'exists' : 'null',
+      userId: user?.uid
+    });
+  }, [user]);
+
   useEffect(() => {
     const checkStripeAccount = async () => {
       if (!user?.uid) return;

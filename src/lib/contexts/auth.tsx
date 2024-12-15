@@ -27,26 +27,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-
-  useEffect(() => {
+   
+  useEffect(() => { 
     const setupAuth = async () => {
+      console.log('Setting up auth...');
+      
       await setPersistence(auth, browserLocalPersistence);
+      console.log('Auth persistence set');
       
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        console.log('Auth state changed:', firebaseUser?.email);
+        console.log('Auth state changed:', {
+          user: firebaseUser ? 'exists' : 'null',
+          email: firebaseUser?.email
+        });
         setUser(firebaseUser);
+
         setLoading(false);
-
-        if (firebaseUser) {
-          // Zapisz dane użytkownika w localStorage
-          localStorage.setItem('user', JSON.stringify({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-          }));
-
-          // Ustaw cookie sesji
-          document.cookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web=${firebaseUser.uid}; path=/; max-age=7200`;
-        }
       });
 
       return () => unsubscribe();
