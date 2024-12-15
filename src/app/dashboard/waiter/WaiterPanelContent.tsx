@@ -6,11 +6,17 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
 import { LogOut, AlertCircle, ExternalLink, Settings } from 'lucide-react';
 import Link from 'next/link';
+import UserAvatar from '@/components/UserAvatar';
 
 interface TipHistory {
   id: string;
   amount: number;
   date: Date;
+}
+
+interface UserData {
+  name: string;
+  avatarUrl: string | null;
 }
 
 export default function WaiterPanelContent() {
@@ -19,28 +25,36 @@ export default function WaiterPanelContent() {
   const [loading, setLoading] = useState(true);
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [tipHistory, setTipHistory] = useState<TipHistory[]>([]);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const checkStripeAccount = async () => {
+    const fetchUserData = async () => {
       if (!user?.uid) return;
 
       try {
         const userRef = doc(db, 'Users', user.uid);
         const userDoc = await getDoc(userRef);
         
-        if (userDoc.exists() && userDoc.data().stripeAccountId) {
-          setHasStripeAccount(true);
-          fetchTipHistory();
+        if (userDoc.exists()) {
+          setUserData({
+            name: userDoc.data().name,
+            avatarUrl: userDoc.data().avatarUrl
+          });
+          
+          if (userDoc.data().stripeAccountId) {
+            setHasStripeAccount(true);
+            fetchTipHistory();
+          }
         }
         setLoading(false);
       } catch (err) {
-        console.error('Error checking Stripe account:', err);
-        setError('Błąd podczas sprawdzania konta Stripe');
+        console.error('Error fetching user data:', err);
+        setError('Błąd podczas ładowania danych');
         setLoading(false);
       }
     };
 
-    checkStripeAccount();
+    fetchUserData();
   }, [user]);
 
   const handleSignOut = async () => {
@@ -90,9 +104,16 @@ export default function WaiterPanelContent() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Panel kelnera: {user?.displayName}
-            </h1>
+            <div className="flex flex-col items-center space-y-4">
+              <UserAvatar
+                name={userData?.name || user?.displayName || ''}
+                avatarUrl={userData?.avatarUrl}
+                size="lg"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">
+                Witaj {userData?.name || user?.displayName}
+              </h1>
+            </div>
           </div>
 
           {!hasStripeAccount ? (
