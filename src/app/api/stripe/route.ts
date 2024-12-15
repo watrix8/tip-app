@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('Received request:', body);
 
-    const { action, waiterId } = body;
+    const { action, waiterId, stripeAccountId } = body;
 
     if (!waiterId) {
       return NextResponse.json(
@@ -170,6 +170,28 @@ export async function POST(request: Request) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return NextResponse.json(
           { error: `Failed to create payment intent: ${errorMessage}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Nowa akcja - generowanie linku logowania
+    if (action === 'create-login-link') {
+      if (!stripeAccountId) {
+        return NextResponse.json(
+          { error: 'stripeAccountId is required' },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const loginLink = await stripe.accounts.createLoginLink(stripeAccountId);
+        return NextResponse.json({ url: loginLink.url });
+      } catch (error) {
+        console.error('Login link creation error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        return NextResponse.json(
+          { error: `Failed to create login link: ${errorMessage}` },
           { status: 400 }
         );
       }

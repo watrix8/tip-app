@@ -63,12 +63,13 @@ export default function WaiterPanelContent() {
 
   const handleStripeLoginClick = async () => {
     try {
-      const response = await fetch('/api/stripe/login-link', {
+      const response = await fetch('/api/stripe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'create-login-link',
           stripeAccountId: userData?.stripeAccountId
         }),
       });
