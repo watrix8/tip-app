@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Sprawdzamy zarówno cookie jak i localStorage
-  const session = request.cookies.get('firebase:authUser');
+  const session = request.cookies.get('firebase:authUser:YOUR_API_KEY:web');
   
   // Dodajemy debug logi
   console.log('Middleware checking auth:', {

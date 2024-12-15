@@ -30,22 +30,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser?.email);
-      setUser(firebaseUser);
-      setLoading(false);
-
-      // Dodajemy automatyczne przekierowanie po zmianie stanu autentykacji
+      console.log('Current pathname:', window.location.pathname);
+      console.log('Attempting redirect to:', '/dashboard/waiter');
+      
       if (firebaseUser) {
-        console.log('User authenticated, redirecting to dashboard');
-        router.push('/dashboard/waiter');
-      } else {
-        console.log('No user, redirecting to login');
-        router.push('/login');
+        window.location.href = '/dashboard/waiter';
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
