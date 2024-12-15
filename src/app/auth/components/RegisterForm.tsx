@@ -69,50 +69,75 @@ const handleSubmit = async (e: React.FormEvent) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+            Imię
+          </label>
+          <input
+            id="firstName"
+            type="text"
+            value={formData.firstName}
+            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+            Nazwisko
+          </label>
+          <input
+            id="lastName"
+            type="text"
+            value={formData.lastName}
+            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+            required
+          />
+        </div>
+      </div>
+      
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          Email
+        </label>
         <input
-          type="text"
-          placeholder="Imię"
-          value={formData.firstName}
-          onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-          className="w-full p-2 border rounded-lg"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Nazwisko"
-          value={formData.lastName}
-          onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-          className="w-full p-2 border rounded-lg"
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({...formData, email: e.target.value})}
+          className="w-full p-3 border rounded-lg"
           required
         />
       </div>
       
-      <input
-        type="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={(e) => setFormData({...formData, email: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-        required
-      />
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          Hasło
+        </label>
+        <input
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData({...formData, password: e.target.value})}
+          className="w-full p-3 border rounded-lg"
+          required
+        />
+      </div>
       
-      <input
-        type="password"
-        placeholder="Hasło"
-        value={formData.password}
-        onChange={(e) => setFormData({...formData, password: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-        required
-      />
-      
-      <input
-        type="password"
-        placeholder="Potwierdź hasło"
-        value={formData.confirmPassword}
-        onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-        className="w-full p-2 border rounded-lg"
-        required
-      />
+      <div>
+        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          Potwierdź hasło
+        </label>
+        <input
+          id="confirmPassword"
+          type="password"
+          value={formData.confirmPassword}
+          onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+          className="w-full p-3 border rounded-lg"
+          required
+        />
+      </div>
 
       {error && (
         <p className="text-red-500 text-sm text-center">{error}</p>
