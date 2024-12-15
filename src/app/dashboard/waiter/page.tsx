@@ -5,8 +5,10 @@ import WaiterPanelContent from '@/app/dashboard/waiter/WaiterPanelContent';
 
 export default function WaiterPage() {
   return (
-    <ClientAuthProvider>
-      <WaiterPanelContent />
-    </ClientAuthProvider>
+    <div className="min-h-screen bg-gray-50">
+      <ClientAuthProvider>
+        <WaiterPanelContent />
+      </ClientAuthProvider>
+    </div>
   );
-} 
+}
