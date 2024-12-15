@@ -8,6 +8,7 @@ import { loadStripe, StripeError } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { PaymentForm } from './component/PaymentForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/lib/contexts/auth';
 
 const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
 
@@ -17,16 +18,16 @@ interface Waiter {
   avatarUrl: string;
 }
 
-// Loading State Component
 const LoadingState = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
   </div>
 );
 
-// Main Content Component
 const PaymentPageContent = () => {
+  const { loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(true);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [coverFee, setCoverFee] = useState(false);
@@ -42,18 +43,28 @@ const PaymentPageContent = () => {
   const tipAmounts = [10, 20, 30] as const;
   
   useEffect(() => {
+    const initializePaymentPage = async () => {
+      if (authLoading) {
+        return;
+      }
+
+      if (waiterId && name) {
+        const waiterData: Waiter = {
+          name: decodeURIComponent(name),
+          id: waiterId,
+          avatarUrl: `https://example.com/avatars/${waiterId}.jpg`,
+        };
+        setWaiter(waiterData);
+      }
+      setLoading(false);
+    };
+
+    initializePaymentPage();
+    
     console.log('Component mounted');
     console.log('Waiter data:', waiter);
     console.log('Client secret:', clientSecret);
-    if (waiterId && name) {
-      const waiterData: Waiter = {
-        name: decodeURIComponent(name),
-        id: waiterId,
-        avatarUrl: `https://example.com/avatars/${waiterId}.jpg`,
-      };
-      setWaiter(waiterData);
-    }
-  }, [waiterId, name]);
+  }, [waiterId, name, authLoading]);
 
   const getInitials = (name: string): string => {
     return name
@@ -124,8 +135,23 @@ const PaymentPageContent = () => {
     setPaymentError('Wystąpił błąd podczas przetwarzania płatności');
   };
 
-  if (!waiter) {
+  if (loading || authLoading) {
     return <LoadingState />;
+  }
+
+  if (!waiter) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-2">
+            Błąd ładowania danych
+          </h1>
+          <p className="text-gray-600">
+            Nie udało się załadować danych kelnera. Spróbuj ponownie później.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -254,7 +280,6 @@ const PaymentPageContent = () => {
   );
 };
 
-// Main Page Component
 export default function PaymentPage() {
   return (
     <Suspense fallback={<LoadingState />}>
