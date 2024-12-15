@@ -40,8 +40,11 @@ const PaymentPageContent = () => {
   const waiterId = searchParams.get('waiterId');
   const name = searchParams.get('name');
   const tipAmounts = [10, 20, 30] as const;
-
+  
   useEffect(() => {
+    console.log('Component mounted');
+    console.log('Waiter data:', waiter);
+    console.log('Client secret:', clientSecret);
     if (waiterId && name) {
       const waiterData: Waiter = {
         name: decodeURIComponent(name),
@@ -70,13 +73,18 @@ const PaymentPageContent = () => {
   };
 
   const handlePayment = async () => {
+    console.log('HandlePayment called');
+    console.log('Final amount:', getFinalAmount());
+    
     const finalAmount = getFinalAmount();
     if (!finalAmount || finalAmount <= 0 || !waiter || !termsAccepted) {
+      console.log('Validation failed:', { finalAmount, waiter, termsAccepted });
       setPaymentError('Proszę wybrać kwotę napiwku i zaakceptować regulamin');
       return;
     }
-
+  
     try {
+      console.log('Sending request to /api/stripe');
       const response = await fetch('/api/stripe', {
         method: 'POST',
         headers: {
@@ -88,12 +96,14 @@ const PaymentPageContent = () => {
           waiterId: waiter.id,
         }),
       });
-
+  
+      console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error('Błąd podczas tworzenia płatności');
       }
-
+  
       const data = await response.json();
+      console.log('Response data:', data);
       setClientSecret(data.clientSecret);
       setPaymentError(null);
     } catch (error) {

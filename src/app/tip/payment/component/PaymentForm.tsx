@@ -1,5 +1,5 @@
-// app/checkout/tip/payment/components/PaymentForm.tsx
-import { useState } from 'react';
+// app/tip/payment/components/PaymentForm.tsx
+import { useState, useEffect } from 'react';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,6 +17,13 @@ export const PaymentForm = ({ onSuccess, onError, termsAccepted }: PaymentFormPr
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
+  useEffect(() => {
+    console.log('PaymentForm mounted');
+    console.log('Stripe available:', !!stripe);
+    console.log('Elements available:', !!elements);
+    console.log('Terms accepted:', termsAccepted);
+  }, [stripe, elements, termsAccepted]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!stripe || !elements || !termsAccepted) return;
@@ -28,7 +35,7 @@ export const PaymentForm = ({ onSuccess, onError, termsAccepted }: PaymentFormPr
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/payment/success`,
+          return_url: `${window.location.origin}/tip/success`,
         },
         redirect: 'if_required',
       });
