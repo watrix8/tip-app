@@ -14,25 +14,19 @@ export async function POST(request: Request) {
     console.log('Received request body:', body);
 
     const { action, waiterId, refreshUrl, returnUrl } = body;
+    console.log('Parsed values:', { action, waiterId, refreshUrl, returnUrl });
 
     if (!waiterId) {
+      console.log('Missing waiterId');
       return NextResponse.json(
         { error: 'waiterId is required' },
         { status: 400 }
       );
     }
 
-    if (action === 'create-connect-account' && (!refreshUrl || !returnUrl)) {
-      return NextResponse.json(
-        { error: 'refreshUrl and returnUrl are required for connect account creation' },
-        { status: 400 }
-      );
-    }
-
-    // Dodajemy obsługę tworzenia konta Connect
     if (action === 'create-connect-account') {
       try {
-        // Tworzenie konta Stripe Connect
+        console.log('Creating Stripe account...');
         const account = await stripe.accounts.create({
           type: 'express',
           country: 'PL',
@@ -45,23 +39,25 @@ export async function POST(request: Request) {
             waiterId,
           },
         });
+        console.log('Stripe account created:', account.id);
 
-        // Tworzenie linku do onboardingu
+        console.log('Creating account link...');
         const accountLink = await stripe.accountLinks.create({
           account: account.id,
-          refresh_url: refreshUrl,
-          return_url: returnUrl,
+          refresh_url: refreshUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
+          return_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
           type: 'account_onboarding',
         });
+        console.log('Account link created');
 
         return NextResponse.json({
           accountId: account.id,
           accountLink: accountLink.url,
         });
-      } catch (error) {
-        console.error('Error creating Stripe account:', error);
+      } catch (error: any) {
+        console.error('Stripe error details:', error.message);
         return NextResponse.json(
-          { error: 'Failed to create Stripe account' },
+          { error: `Failed to create Stripe account: ${error.message}` },
           { status: 400 }
         );
       }
