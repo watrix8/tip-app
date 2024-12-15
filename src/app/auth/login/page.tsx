@@ -1,51 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/config/firebase';
 import LoginButton from '@/app/auth/components/LoginButton';
+import RegisterForm from '@/app/auth/components/RegisterForm';
 
 export default function LoginPage() {
-  const [migrationError, setMigrationError] = useState('');
-
-  const migrateUser = async (email: string, password: string) => {
-    try {
-      console.log('Rozpoczynam migrację użytkownika:', email);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('Użytkownik pomyślnie dodany do Firebase Auth:', userCredential.user.uid);
-      alert('Konto zostało utworzone w Firebase Auth. Możesz się teraz zalogować.');
-    } catch (error) {
-      console.error('Błąd podczas migracji:', error);
-      setMigrationError('Błąd podczas tworzenia konta w Firebase Auth');
-    }
-  };
+  const [showRegister, setShowRegister] = useState(false);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Zaloguj się do swojego konta
-          </h2>
-        </div>
-
-        {/* Przycisk do migracji */}
-        <div className="mt-4">
-          <button
-            onClick={() => migrateUser('tomasz.watras@gmail.com', 'twoje-haslo')}
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
-          >
-            Utwórz konto w Firebase Auth
-          </button>
-          {migrationError && (
-            <p className="text-red-500 text-sm mt-2">{migrationError}</p>
-          )}
-        </div>
-
-        <div className="mt-8">
-          <LoginButton />
-        </div>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
+        {showRegister ? (
+          <RegisterForm onBackToLogin={() => setShowRegister(false)} />
+        ) : (
+          <>
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">TipApp</h1>
+              <p className="text-gray-500 mt-2">System napiwków dla kelnerów</p>
+            </div>
+            <div className="space-y-6">
+              <LoginButton />
+              <button
+                onClick={() => setShowRegister(true)}
+                className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+              >
+                Zarejestruj się
+              </button>
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </main>
   );
 }

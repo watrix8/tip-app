@@ -1,77 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth';
-import LoginButton from '@/app/auth/components/LoginButton';
-import RegisterForm from '@/app/auth/components/RegisterForm';
-import dynamic from 'next/dynamic';
-
-const WaiterPanel = dynamic(() => import('@/app/dashboard/components/WaiterPanel'), {
-  ssr: false
-});
-  
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  restaurantId: string;
-  avatarUrl: string;
-}
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth(); // Wyciągamy logout z useAuth na poziomie komponentu
-  const [showRegister, setShowRegister] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && user) {
-      setCurrentUser({
-        id: user.uid,
-        name: user.displayName || '',
-        email: user.email || '',
-        restaurantId: '',
-        avatarUrl: user.photoURL || ''
-      });
+    if (!loading) {
+      if (user) {
+        router.push('/dashboard/waiter');
+      } else {
+        router.push('/login');
+      }
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
-  const handleLogout = async () => {
-    try {
-      await logout(); // Używamy logout z kontekstu
-      setCurrentUser(null);
-      router.push('/');
-    } catch (error) {
-      console.error('Błąd wylogowania:', error);
-    }
-  };
-
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
-        {currentUser ? (
-          <WaiterPanel onLogout={handleLogout} currentUser={currentUser} />
-        ) : showRegister ? (
-          <RegisterForm onBackToLogin={() => setShowRegister(false)} />
-        ) : (
-          <>
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">TipApp</h1>
-              <p className="text-gray-500 mt-2">System napiwków dla kelnerów</p>
-            </div>
-            <div className="space-y-6">
-              <LoginButton />
-              <button
-                onClick={() => setShowRegister(true)}
-                className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
-              >
-                Zarejestruj się
-              </button>
-            </div>
-          </>
-        )}
+  // Pokazujemy loading state podczas sprawdzania autentykacji
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
-    </main>
-  );
+    );
+  }
+
+  return null; // Strona będzie pusta, ponieważ i tak nastąpi przekierowanie
 }

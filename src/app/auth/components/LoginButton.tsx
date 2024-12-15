@@ -5,38 +5,47 @@ import { LogIn } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { auth } from '@/lib/config/firebase';
+import { useRouter } from 'next/navigation';  // Dodajemy import
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const router = useRouter();  // Dodajemy router
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       console.log('Próba logowania dla:', email);
-      // Sprawdźmy konfigurację Firebase przed próbą logowania
       console.log('Firebase Auth initialized:', !!auth);
-      console.log('Firebase Config:', {
-        apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-      });
       
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log('Logowanie udane');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Logowanie udane, user:', userCredential.user.email);
+      
+      // Dodajemy małe opóźnienie
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Próba przekierowania do /dashboard/waiter');
+      router.push('/dashboard/waiter');
+      
+      // Fallback w przypadku gdyby router.push nie zadziałał
+      setTimeout(() => {
+        console.log('Fallback redirect');
+        window.location.href = '/dashboard/waiter';
+      }, 1000);
+
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
-      // Dodajmy więcej szczegółów o błędzie
       if (err instanceof FirebaseError) {
         console.log('Firebase Error Code:', err.code);
         console.log('Firebase Error Message:', err.message);
         switch (err.code) {
           case 'auth/invalid-credential':
-            setError('Nieprawidłowy email lub hasło. Sprawdź czy konto zostało utworzone w Firebase Auth.');
+            setError('Nieprawidłowy email lub hasło.');
             break;
           case 'auth/user-not-found':
-            setError('Użytkownik nie istnieje w Firebase Auth');
+            setError('Użytkownik nie istnieje.');
             break;
           case 'auth/wrong-password':
             setError('Nieprawidłowe hasło');
