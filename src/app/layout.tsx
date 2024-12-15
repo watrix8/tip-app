@@ -8,7 +8,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body>
+      <body className="min-h-screen bg-white">
         <AuthProvider>
           {children}
         </AuthProvider>
