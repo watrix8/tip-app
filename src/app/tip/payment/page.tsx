@@ -105,7 +105,7 @@ const PaymentPageContent = () => {
   const handlePaymentSuccess = () => {
     setPaymentSuccess(true);
     setTimeout(() => {
-      window.location.href = '/payment/success';
+      window.location.href = '/tip/success';
     }, 2000);
   };
 
