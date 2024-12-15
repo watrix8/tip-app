@@ -42,5 +42,5 @@ export default function WaiterPanelPage() {
     );
   }
 
-  return <WaiterPanel currentUser={userData} onLogout={logout} />;
+  return <WaiterPanel currentUser={userData as { id: string; name: string; email: string; } | null} onLogout={logout} />;
 }
