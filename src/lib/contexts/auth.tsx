@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Attempting login with:', email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
-      router.push('/waiter-panel'); // lub inna strona po zalogowaniu
+      router.push('/dashboard/waiter');
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
