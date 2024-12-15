@@ -19,45 +19,76 @@ const LoadingState = () => (
 const TipPageContent = () => {
   const searchParams = useSearchParams();
   const waiterId = searchParams.get('waiterId');
-  const name = searchParams.get('name');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [waiterData, setWaiterData] = useState<{
+    name: string;
+    avatarUrl: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchWaiterData = async () => {
-      if (waiterId) {
-        try {
-          const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
-          if (waiterDoc.exists()) {
-            setAvatarUrl(waiterDoc.data().avatarUrl || null);
-          }
-        } catch (error) {
-          console.error('Error fetching waiter data:', error);
+      if (!waiterId) {
+        setError('Brak ID kelnera');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const waiterDoc = await getDoc(doc(db, 'Users', waiterId));
+        if (waiterDoc.exists()) {
+          setWaiterData({
+            name: waiterDoc.data().name,
+            avatarUrl: waiterDoc.data().avatarUrl || null
+          });
+        } else {
+          setError('Nie znaleziono kelnera');
         }
+      } catch (error) {
+        console.error('Error fetching waiter data:', error);
+        setError('Błąd podczas ładowania danych');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchWaiterData();
   }, [waiterId]);
 
-  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tip/payment?waiterId=${waiterId}&name=${encodeURIComponent(name || '')}`;
+  if (loading) return <LoadingState />;
+
+  if (error || !waiterData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-2">
+            Błąd ładowania danych
+          </h1>
+          <p className="text-gray-600">
+            {error || 'Nie udało się załadować danych kelnera'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tip/payment?waiterId=${waiterId}`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         <div className="text-center space-y-6">
-          {/* Avatar */}
           <div className="flex justify-center">
             <UserAvatar 
-              name={name} 
-              avatarUrl={avatarUrl} 
+              name={waiterData.name} 
+              avatarUrl={waiterData.avatarUrl} 
               size="lg"
             />
           </div>
 
-          {/* Nazwa kelnera */}
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {name}
+              {waiterData.name}
             </h1>
             <p className="text-gray-500 mt-1">
               Zeskanuj kod QR aby zostawić napiwek
