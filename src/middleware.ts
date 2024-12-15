@@ -16,7 +16,6 @@ export function middleware(request: NextRequest) {
   });
 
   // Definiujemy ścieżki publiczne i chronione
-  const publicPaths = ['/', '/login', '/register'];
   const protectedPaths = ['/dashboard', '/settings'];
   
   const isProtectedPath = protectedPaths.some(p => path.startsWith(p));
