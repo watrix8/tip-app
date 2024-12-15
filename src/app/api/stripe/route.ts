@@ -1,17 +1,23 @@
-// src/app/api/stripe/route.ts
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/config/firebase';
+import { getFirestore } from 'firebase/firestore';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
 import Stripe from 'stripe';
 
-// Interfejs dla błędu Stripe
-interface StripeError extends Error {
-  type?: string;
-  message: string;
-  code?: string;
-}
+// Konfiguracja Firebase
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+};
 
-// Inicjalizacja Stripe z zmiennej środowiskowej
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+const db = getFirestore(app);
+
+// Inicjalizacja Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-11-20.acacia',
 });
@@ -19,13 +25,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('Received request body:', body);
+    console.log('Received request:', body);
 
-    const { action, waiterId, refreshUrl, returnUrl } = body;
-    console.log('Parsed values:', { action, waiterId, refreshUrl, returnUrl });
+    const { action, waiterId } = body;
 
     if (!waiterId) {
-      console.log('Missing waiterId');
       return NextResponse.json(
         { error: 'waiterId is required' },
         { status: 400 }
@@ -35,22 +39,23 @@ export async function POST(request: Request) {
     // Sprawdzenie statusu konta
     if (action === 'check-account-status') {
       try {
-        const waiterRef = doc(db, 'waiters', waiterId);
-        const waiterDoc = await getDoc(waiterRef);
+        const userRef = doc(db, 'Users', waiterId);
+        const userDoc = await getDoc(userRef);
         
-        if (!waiterDoc.exists() || !waiterDoc.data().stripeAccountId) {
+        if (!userDoc.exists() || !userDoc.data().stripeAccountId) {
           return NextResponse.json({ hasAccount: false });
         }
 
-        const account = await stripe.accounts.retrieve(waiterDoc.data().stripeAccountId);
+        const account = await stripe.accounts.retrieve(userDoc.data().stripeAccountId);
         return NextResponse.json({
           hasAccount: true,
           isEnabled: account.charges_enabled && account.payouts_enabled
         });
       } catch (error) {
-        const stripeError = error as StripeError;
+        console.error('Check account status error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return NextResponse.json(
-          { error: `Failed to check account status: ${stripeError.message}` },
+          { error: `Failed to check account status: ${errorMessage}` },
           { status: 400 }
         );
       }
@@ -59,21 +64,23 @@ export async function POST(request: Request) {
     // Tworzenie konta Connect
     if (action === 'create-connect-account') {
       try {
-        // Najpierw sprawdź czy kelner już nie ma konta
-        const waiterRef = doc(db, 'waiters', waiterId);
-        const waiterDoc = await getDoc(waiterRef);
+        const userRef = doc(db, 'Users', waiterId);
+        console.log('Checking user document...');
+
+        const userDoc = await getDoc(userRef);
         
-        if (waiterDoc.exists() && waiterDoc.data().stripeAccountId) {
-          const existingAccount = await stripe.accounts.retrieve(waiterDoc.data().stripeAccountId);
+        if (userDoc.exists() && userDoc.data().stripeAccountId) {
+          console.log('Existing Stripe account found');
+          const existingAccount = await stripe.accounts.retrieve(userDoc.data().stripeAccountId);
           if (existingAccount.charges_enabled) {
             return NextResponse.json({ 
-              accountId: waiterDoc.data().stripeAccountId,
+              accountId: userDoc.data().stripeAccountId,
               alreadyEnabled: true 
             });
           }
         }
 
-        console.log('Creating Stripe account...');
+        console.log('Creating new Stripe account...');
         const account = await stripe.accounts.create({
           type: 'express',
           country: 'PL',
@@ -86,10 +93,9 @@ export async function POST(request: Request) {
             waiterId,
           },
         });
-        console.log('Stripe account created:', account.id);
 
         // Zapisz ID konta w Firestore
-        await setDoc(waiterRef, {
+        await setDoc(userRef, {
           stripeAccountId: account.id,
           stripeOnboardingStatus: 'pending',
           updatedAt: new Date().toISOString()
@@ -98,21 +104,20 @@ export async function POST(request: Request) {
         console.log('Creating account link...');
         const accountLink = await stripe.accountLinks.create({
           account: account.id,
-          refresh_url: refreshUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
-          return_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
+          refresh_url: body.refreshUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
+          return_url: body.returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/waiter`,
           type: 'account_onboarding',
         });
-        console.log('Account link created');
 
         return NextResponse.json({
           accountId: account.id,
           accountLink: accountLink.url,
         });
-      } catch (error: unknown) {
-        const stripeError = error as StripeError;
-        console.error('Stripe error details:', stripeError.message);
+      } catch (error) {
+        console.error('Stripe account creation error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return NextResponse.json(
-          { error: `Failed to create Stripe account: ${stripeError.message}` },
+          { error: `Failed to create Stripe account: ${errorMessage}` },
           { status: 400 }
         );
       }
@@ -120,45 +125,54 @@ export async function POST(request: Request) {
 
     // Tworzenie intencji płatności
     if (action === 'create-payment-intent') {
-      const waiterRef = doc(db, 'waiters', waiterId);
-      const waiterDoc = await getDoc(waiterRef);
-      
-      if (!waiterDoc.exists()) {
-        return NextResponse.json(
-          { error: 'No waiter found' },
-          { status: 404 }
-        );
-      }
+      try {
+        const userRef = doc(db, 'Users', waiterId);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+          return NextResponse.json(
+            { error: 'No waiter found' },
+            { status: 404 }
+          );
+        }
 
-      const waiterData = waiterDoc.data();
-      if (!waiterData.stripeAccountId) {
+        const userData = userDoc.data();
+        if (!userData.stripeAccountId) {
+          return NextResponse.json(
+            { error: 'No Stripe account found for waiter' },
+            { status: 400 }
+          );
+        }
+
+        // Sprawdź czy konto jest w pełni skonfigurowane
+        const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+        if (!account.charges_enabled) {
+          return NextResponse.json(
+            { error: 'Stripe account is not fully set up' },
+            { status: 400 }
+          );
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: body.amount * 100, // Konwersja na grosze
+          currency: 'pln',
+          application_fee_amount: 50, // 50 groszy prowizji
+          transfer_data: {
+            destination: userData.stripeAccountId,
+          },
+        });
+
+        return NextResponse.json({ 
+          clientSecret: paymentIntent.client_secret 
+        });
+      } catch (error) {
+        console.error('Payment intent creation error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return NextResponse.json(
-          { error: 'No Stripe account found for waiter' },
+          { error: `Failed to create payment intent: ${errorMessage}` },
           { status: 400 }
         );
       }
-
-      // Sprawdź czy konto jest w pełni skonfigurowane
-      const account = await stripe.accounts.retrieve(waiterData.stripeAccountId);
-      if (!account.charges_enabled) {
-        return NextResponse.json(
-          { error: 'Stripe account is not fully set up' },
-          { status: 400 }
-        );
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: body.amount * 100, // Konwersja na grosze
-        currency: 'pln',
-        application_fee_amount: 50, // 50 groszy prowizji
-        transfer_data: {
-          destination: waiterData.stripeAccountId,
-        },
-      });
-
-      return NextResponse.json({ 
-        clientSecret: paymentIntent.client_secret 
-      });
     }
 
     return NextResponse.json(
@@ -167,9 +181,10 @@ export async function POST(request: Request) {
     );
 
   } catch (error) {
-    console.error('Stripe API error:', error);
+    console.error('API route error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

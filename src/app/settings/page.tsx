@@ -1,7 +1,7 @@
 'use client';
 
 import ClientAuthProvider from '@/components/ClientAuthProvider';
-import SettingsPageContent from '@/app/dashboard/settings/SettingsPageContent';
+import SettingsPageContent from '@/app/settings/SettingsPageContent';
 
 export default function SettingsPage() {
   return (

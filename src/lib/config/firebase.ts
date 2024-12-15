@@ -1,6 +1,6 @@
 'use client';
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -13,24 +13,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Sprawdzamy czy mamy wszystkie wymagane zmienne środowiskowe
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-  console.error('Missing Firebase configuration:', {
-    apiKey: !!firebaseConfig.apiKey,
-    authDomain: !!firebaseConfig.authDomain,
-    projectId: !!firebaseConfig.projectId
-  });
-  throw new Error('Missing Firebase configuration');
-}
+// Inicjalizuj Firebase tylko jeśli nie ma jeszcze żadnej instancji
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Inicjalizacja Firebase
-const app = initializeApp(firebaseConfig);
-
-// Inicjalizacja Firestore
+// Exportuj instancje
 export const db = getFirestore(app);
-
-// Inicjalizacja Auth
 export const auth = getAuth(app);
 
-// Dodajemy log do sprawdzenia czy auth jest poprawnie zainicjalizowany
-console.log('Firebase Auth initialized:', !!auth);
+console.log('Firebase initialized with config:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasProjectId: !!firebaseConfig.projectId,
+  hasDb: !!db
+});

@@ -11,11 +11,12 @@ export const createOrUpdateUser = async (uid: string, userData: {
   avatarUrl?: string;
 }) => {
   try {
+    // Sprawdź czy dokument już istnieje
     const userRef = doc(db, 'Users', uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Tworzymy nowy dokument z ID takim samym jak uid z Firebase Auth
+      // Tworzymy nowy dokument
       await setDoc(userRef, {
         ...userData,
         id: uid,
