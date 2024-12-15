@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getFirestore } from 'firebase/firestore';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import Stripe from 'stripe';
 
