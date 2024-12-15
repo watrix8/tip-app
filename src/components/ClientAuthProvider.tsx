@@ -1,8 +1,10 @@
 'use client';
 
 import { useAuth } from '@/lib/contexts/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+
+const PUBLIC_PATHS = ['/', '/login', '/register'];
 
 export default function ClientAuthProvider({
   children,
@@ -11,12 +13,13 @@ export default function ClientAuthProvider({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !PUBLIC_PATHS.includes(pathname)) {
       router.push('/login');
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, pathname]);
 
   if (loading) {
     return (
@@ -26,7 +29,7 @@ export default function ClientAuthProvider({
     );
   }
 
-  if (!user) {
+  if (!user && !PUBLIC_PATHS.includes(pathname)) {
     return null;
   }
 
