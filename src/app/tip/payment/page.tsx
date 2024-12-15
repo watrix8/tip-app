@@ -1,6 +1,8 @@
 'use client';
 
 import React, { Suspense, useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/config/firebase';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
@@ -43,40 +45,55 @@ const PaymentPageContent = () => {
  const tipAmounts = [10, 20, 30] as const;
  
  useEffect(() => {
-   const initializePaymentPage = async () => {
-     if (authLoading) {
-       return;
-     }
+  const initializePaymentPage = async () => {
+    if (authLoading) {
+      return;
+    }
 
-     if (!waiterId || !name) {
-       console.log('Missing required parameters:', { waiterId, name });
-       setLoading(false);
-       return;
-     }
+    if (!waiterId) {
+      console.log('Missing waiterId parameter');
+      setLoading(false);
+      return;
+    }
 
-     try {
-       const waiterData: Waiter = {
-         name: decodeURIComponent(name),
-         id: waiterId,
-         avatarUrl: `https://example.com/avatars/${waiterId}.jpg`,
-       };
-       setWaiter(waiterData);
-     } catch (error) {
-       console.error('Error initializing waiter data:', error);
-     } finally {
-       setLoading(false);
-     }
-   };
+    try {
+      let waiterName = name;
+      
+      // Jeśli name jest puste, próbujemy pobrać z Firebase
+      if (!waiterName) {
+        const docRef = doc(db, 'Users', waiterId);
+        const waiterDoc = await getDoc(docRef);
+        
+        if (waiterDoc.exists()) {
+          waiterName = waiterDoc.data().name;
+        } else {
+          throw new Error('Nie znaleziono danych kelnera');
+        }
+      }
 
-   console.log('Effect running with auth state:', { 
-     authLoading, 
-     user: user?.email,
-     waiterId,
-     name 
-   });
-   
-   initializePaymentPage();
- }, [authLoading, user, waiterId, name]);
+      const waiterData: Waiter = {
+        name: decodeURIComponent(waiterName || ''),
+        id: waiterId || '',
+        avatarUrl: `https://example.com/avatars/${waiterId || ''}.jpg`,
+      };
+      setWaiter(waiterData);
+    } catch (error) {
+      console.error('Error initializing waiter data:', error);
+      setPaymentError('Nie udało się załadować danych kelnera');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log('Effect running with auth state:', { 
+    authLoading, 
+    user: user?.email,
+    waiterId,
+    name 
+  });
+  
+  initializePaymentPage();
+}, [authLoading, user, waiterId, name]);
 
  const getInitials = (name: string): string => {
    return name
