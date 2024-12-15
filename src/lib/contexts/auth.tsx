@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   signInWithEmailAndPassword,
-  signOut,
   onAuthStateChanged,
   User,
   setPersistence,
@@ -73,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await signOut();
       localStorage.removeItem('user');
       // Usuń cookie sesji
       document.cookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
