@@ -8,6 +8,7 @@ import { db } from '@/lib/config/firebase';
 import { useAuth } from '@/lib/contexts/auth';
 import type { SettingsPageProps } from '@/types/user';
 import Image from 'next/image';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const router = useRouter();
@@ -42,11 +43,44 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !currentUser?.id) return;
 
-    // Tutaj w prawdziwej aplikacji należałoby zaimplementować upload do Firebase Storage
-    // Na potrzeby przykładu używamy URL.createObjectURL
-    setAvatarUrl(URL.createObjectURL(file));
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Inicjalizacja Firebase Storage
+      const storage = getStorage();
+      
+      // Tworzenie unikalnej nazwy pliku
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `avatar-${Date.now()}.${fileExtension}`;
+      
+      // Referencja do miejsca w Storage
+      const avatarRef = ref(storage, `avatars/${currentUser.id}/${fileName}`);
+      
+      // Upload pliku
+      await uploadBytes(avatarRef, file);
+      
+      // Pobranie publicznego URL
+      const downloadURL = await getDownloadURL(avatarRef);
+      console.log('Uploaded avatar URL:', downloadURL);
+      
+      // Aktualizacja URL w bazie danych
+      const userRef = doc(db, 'Users', currentUser.id);
+      await updateDoc(userRef, {
+        avatarUrl: downloadURL
+      });
+      
+      // Aktualizacja stanu komponentu
+      setAvatarUrl(downloadURL);
+      
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      setError('Wystąpił błąd podczas zapisywania avatara');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
