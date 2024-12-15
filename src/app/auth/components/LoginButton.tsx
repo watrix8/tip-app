@@ -2,39 +2,22 @@
 
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '@/lib/contexts/auth'; // Zmieniamy import na useAuth
 import { FirebaseError } from 'firebase/app';
-import { auth } from '@/lib/config/firebase';
-import { useRouter } from 'next/navigation';  // Dodajemy import
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();  // Dodajemy router
+  const { login } = useAuth(); // Używamy hooka useAuth
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       console.log('Próba logowania dla:', email);
-      console.log('Firebase Auth initialized:', !!auth);
-      
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Logowanie udane, user:', userCredential.user.email);
-      
-      // Dodajemy małe opóźnienie
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Próba przekierowania do /dashboard/waiter');
-      router.push('/dashboard/waiter');
-      
-      // Fallback w przypadku gdyby router.push nie zadziałał
-      setTimeout(() => {
-        console.log('Fallback redirect');
-        window.location.href = '/dashboard/waiter';
-      }, 1000);
-
+      await login(email, password); // Używamy funkcji login z kontekstu auth
+      console.log('Logowanie udane - oczekiwanie na przekierowanie');
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
       if (err instanceof FirebaseError) {
