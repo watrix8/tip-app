@@ -27,6 +27,7 @@ export function middleware(request: NextRequest) {
 
   // Jeśli nie ma sesji i próbujemy dostać się do chronionych ścieżek
   if (!firebaseCookie && !isPublicPath && request.nextUrl.pathname !== '/') {
+    console.log('Redirecting to login due to no session');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
