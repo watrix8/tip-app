@@ -29,24 +29,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('Current pathname:', window.location.pathname);
-      console.log('Attempting redirect to:', '/dashboard/waiter');
-      
-      if (firebaseUser) {
-        window.location.href = '/dashboard/waiter';
-      }
-    });
+    // Ustawiamy persystencję na początku
+    setPersistence(auth, browserLocalPersistence).then(() => {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setLoading(false);
+        
+        console.log('Auth state changed:', firebaseUser?.email);
+        
+        if (firebaseUser) {
+          // Sprawdzamy aktualną ścieżkę
+          const currentPath = window.location.pathname;
+          if (currentPath === '/login') {
+            console.log('Redirecting from login to waiter panel');
+            window.location.href = '/dashboard/waiter';
+          }
+        }
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    });
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login with:', email);
-      await setPersistence(auth, browserLocalPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
+      
+      // Zapisujemy dodatkowe informacje w localStorage
+      localStorage.setItem('userEmail', userCredential.user.email || '');
       
       window.location.href = '/dashboard/waiter';
     } catch (error) {
