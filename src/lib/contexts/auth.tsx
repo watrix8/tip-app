@@ -28,42 +28,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Inicjalizacja persystencji przy starcie aplikacji
-  useEffect(() => {
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log('Persistence set to LOCAL');
-      })
-      .catch((error) => {
-        console.error('Error setting persistence:', error);
-      });
-  }, []);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       console.log('Auth state changed:', firebaseUser?.email);
       setUser(firebaseUser);
       setLoading(false);
 
-      // Zapisujemy stan autentykacji w localStorage
+      // Dodajemy automatyczne przekierowanie po zmianie stanu autentykacji
       if (firebaseUser) {
-        localStorage.setItem('user', JSON.stringify({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email
-        }));
+        console.log('User authenticated, redirecting to dashboard');
+        router.push('/dashboard/waiter');
       } else {
-        localStorage.removeItem('user');
+        console.log('No user, redirecting to login');
+        router.push('/login');
       }
     });
 
-    // Próba przywrócenia sesji z localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      console.log('Found saved user session');
-    }
-
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -72,8 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', userCredential.user.email);
       
-      // Po pomyślnym zalogowaniu przekieruj na dashboard
-      router.push('/dashboard/waiter');
+      window.location.href = '/dashboard/waiter';
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       throw error;
@@ -84,7 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       localStorage.removeItem('user');
-      router.push('/login');
+      console.log('Logout successful, redirecting to login');
+      window.location.href = '/login'; // Używamy bezpośredniego przekierowania przy wylogowaniu
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       throw error;
