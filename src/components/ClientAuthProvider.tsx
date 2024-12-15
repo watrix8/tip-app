@@ -16,8 +16,12 @@ export default function ClientAuthProvider({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user && !PUBLIC_PATHS.includes(pathname)) {
-      router.push('/login');
+    if (!loading) {
+      if (!user && !PUBLIC_PATHS.includes(pathname)) {
+        router.push('/login');
+      } else if (user && PUBLIC_PATHS.includes(pathname)) {
+        router.push('/dashboard/waiter');
+      }
     }
   }, [loading, user, router, pathname]);
 
@@ -27,10 +31,6 @@ export default function ClientAuthProvider({
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
-  }
-
-  if (!user && !PUBLIC_PATHS.includes(pathname)) {
-    return null;
   }
 
   return <>{children}</>;

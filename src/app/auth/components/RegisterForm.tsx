@@ -4,6 +4,7 @@ import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/config/firebase';
 import { createOrUpdateUser } from '@/lib/utils/firebase';
+import { useRouter } from 'next/navigation';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -18,6 +19,7 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const router = useRouter();
 
   // RegisterForm.tsx
 const handleSubmit = async (e: React.FormEvent) => {
@@ -48,8 +50,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     
     console.log('Dokument użytkownika utworzony w Firestore');
     
-    alert('Rejestracja udana! Możesz się teraz zalogować.');
-    onBackToLogin();
+    router.push('/dashboard/waiter');
   } catch (error) {
     console.error("Błąd rejestracji:", error);
     if (error instanceof FirebaseError) {
