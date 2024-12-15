@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Sprawdzamy zarówno cookie jak i localStorage
-  const session = request.cookies.get('firebase:authUser:AIzaSyDOBATcPbsGFsI_s80S8Gw6-p-Qi9_Y-D0:web');
+  const session = request.cookies.get('firebase:authUser');
   
   // Dodajemy debug logi
   console.log('Middleware checking auth:', {
@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Przekierowania
-  if (!session && !isPublicPath) {
+  // Przekierowania tylko dla ścieżek chronionych
+  if (!session && !isPublicPath && request.nextUrl.pathname !== '/') {
     console.log('Redirecting to login - no session');
     return NextResponse.redirect(new URL('/login', request.url));
   }
