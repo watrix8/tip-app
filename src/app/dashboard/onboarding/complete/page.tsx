@@ -24,63 +24,80 @@ const OnboardingCompleteContent = () => {
   const [message, setMessage] = useState('Weryfikacja konfiguracji konta...');
 
   useEffect(() => {
-    const verifySetup = async () => {
-      try {
-        const userId = searchParams.get('userId') || localStorage.getItem('onboarding_user_id');
-        
-        if (!userId) {
-          throw new Error('Brak identyfikatora użytkownika');
-        }
+    // W OnboardingCompleteContent
+const verifySetup = async () => {
+  try {
+    const userId = searchParams.get('userId') || localStorage.getItem('onboarding_user_id');
+    console.log('Attempting verification for userId:', userId);
+    
+    if (!userId) {
+      throw new Error('Brak identyfikatora użytkownika');
+    }
 
-        // Sprawdź status w Stripe
-        const response = await fetch('/api/stripe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            action: 'check-account-status',
-            waiterId: userId 
-          }),
-        });
+    // Sprawdź status w Stripe
+    const response = await fetch('/api/stripe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        action: 'check-account-status',
+        waiterId: userId 
+      }),
+    });
 
-        if (!response.ok) {
-          throw new Error('Błąd podczas sprawdzania statusu konta');
-        }
+    console.log('Stripe status response:', await response.clone().json());
 
-        const accountStatus = await response.json();
-        
-        if (!accountStatus.details_submitted || 
-            !accountStatus.payouts_enabled || 
-            !accountStatus.charges_enabled) {
-          window.location.href = `/dashboard/onboarding/refresh?userId=${userId}`;
-          return;
-        }
+    if (!response.ok) {
+      throw new Error('Błąd podczas sprawdzania statusu konta');
+    }
 
-        // Aktualizuj status w bazie danych
-        const db = getFirestore();
-        const userDoc = doc(db, 'Users', userId);
-        
-        await updateDoc(userDoc, {
-          stripeOnboardingStatus: STRIPE_ONBOARDING_STATUS.COMPLETED,
-          stripeOnboardingTimestamp: new Date().toISOString()
-        });
+    const accountStatus = await response.json();
+    console.log('Account status:', accountStatus);
+    
+    // Jeśli konto nie jest w pełni skonfigurowane
+    if (!accountStatus.details_submitted || 
+        !accountStatus.payouts_enabled || 
+        !accountStatus.charges_enabled) {
+      console.log('Account not fully configured, redirecting to refresh');
+      window.location.href = `/dashboard/onboarding/refresh?userId=${userId}`;
+      return;
+    }
 
-        localStorage.removeItem('onboarding_user_id');
+    // Aktualizuj status w bazie danych
+    const db = getFirestore();
+    const userDoc = doc(db, 'Users', userId);
+    
+    console.log('Updating Firebase document:', {
+      status: STRIPE_ONBOARDING_STATUS.COMPLETED,
+      timestamp: new Date().toISOString()
+    });
 
-        setStatus('success');
-        setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
-        
-        setTimeout(() => {
-          window.location.href = '/dashboard/waiter';
-        }, 3000);
+    try {
+      await updateDoc(userDoc, {
+        stripeOnboardingStatus: STRIPE_ONBOARDING_STATUS.COMPLETED,
+        stripeOnboardingTimestamp: new Date().toISOString()
+      });
+      console.log('Firebase update successful');
+    } catch (error) {
+      console.error('Firebase update error:', error);
+      throw error;
+    }
 
-      } catch (error) {
-        console.error('Błąd podczas weryfikacji:', error);
-        setStatus('error');
-        setMessage('Wystąpił błąd podczas weryfikacji konta. Spróbuj ponownie później.');
-      }
-    };
+    localStorage.removeItem('onboarding_user_id');
+    setStatus('success');
+    setMessage('Konto zostało pomyślnie skonfigurowane! Możesz teraz przyjmować płatności.');
+    
+    setTimeout(() => {
+      window.location.href = '/dashboard/waiter';
+    }, 3000);
+
+  } catch (error) {
+    console.error('Verification error:', error);
+    setStatus('error');
+    setMessage('Wystąpił błąd podczas weryfikacji konta. Spróbuj ponownie później.');
+  }
+};
 
     verifySetup();
   }, [router, searchParams]);
