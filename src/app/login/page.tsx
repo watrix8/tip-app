@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth';
-import LoginButton from '@/app/auth/components/LoginButton';
-import RegisterForm from '@/app/auth/components/RegisterForm';
+import LoginButton from '@/app/login/components/LoginButton';
+import RegisterForm from '@/app/login/components/RegisterForm';
 
 export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);

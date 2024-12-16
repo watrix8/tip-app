@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/config/firebase';
 import { createOrUpdateUser } from '@/lib/utils/firebase';
 import { useRouter } from 'next/navigation';
@@ -19,53 +19,69 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // RegisterForm.tsx
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-  if (formData.password !== formData.confirmPassword) {
-    setError('Hasła się nie zgadzają');
-    return;
-  }
-
-  try {
-    console.log('Rozpoczynam rejestrację:', formData.email);
-    
-    // Najpierw tworzymy użytkownika w Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      formData.email,
-      formData.password
-    );
-
-    console.log('Użytkownik utworzony w Auth:', userCredential.user.uid);
-
-    // Następnie tworzymy dokument użytkownika w Firestore
-    await createOrUpdateUser(userCredential.user.uid, {
-      email: formData.email,
-      name: `${formData.firstName} ${formData.lastName}`,
-    });
-    
-    console.log('Dokument użytkownika utworzony w Firestore');
-    
-    router.push('/dashboard/waiter');
-  } catch (error) {
-    console.error("Błąd rejestracji:", error);
-    if (error instanceof FirebaseError) {
-      if (error.code === 'auth/email-already-in-use') {
-        setError('Ten adres email jest już zajęty');
-      } else if (error.code === 'auth/weak-password') {
-        setError('Hasło jest za słabe - minimum 6 znaków');
-      } else {
-        setError('Błąd rejestracji: ' + error.message);
-      }
-    } else {
-      setError('Wystąpił nieoczekiwany błąd');
+    if (formData.password !== formData.confirmPassword) {
+      setError('Hasła się nie zgadzają');
+      return;
     }
-  }
-};
+
+    setIsLoading(true);
+
+    try {
+      console.log('Rozpoczynam rejestrację:', formData.email);
+      
+      // Tworzenie użytkownika w Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      console.log('Użytkownik utworzony w Auth:', userCredential.user.uid);
+
+      // Tworzenie dokumentu użytkownika w Firestore
+      await createOrUpdateUser(userCredential.user.uid, {
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`,
+      });
+      
+      console.log('Dokument użytkownika utworzony w Firestore');
+      
+      // Czekamy na pełne utworzenie sesji przed przekierowaniem
+      await new Promise<void>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (user) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+      
+      // Teraz możemy bezpiecznie przekierować
+      router.push('/dashboard/waiter');
+      
+    } catch (error) {
+      console.error("Błąd rejestracji:", error);
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/email-already-in-use') {
+          setError('Ten adres email jest już zajęty');
+        } else if (error.code === 'auth/weak-password') {
+          setError('Hasło jest za słabe - minimum 6 znaków');
+        } else {
+          setError('Błąd rejestracji: ' + error.message);
+        }
+      } else {
+        setError('Wystąpił nieoczekiwany błąd');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -81,6 +97,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             onChange={(e) => setFormData({...formData, firstName: e.target.value})}
             className="w-full p-3 border rounded-lg"
             required
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -94,6 +111,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             onChange={(e) => setFormData({...formData, lastName: e.target.value})}
             className="w-full p-3 border rounded-lg"
             required
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -109,6 +127,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           onChange={(e) => setFormData({...formData, email: e.target.value})}
           className="w-full p-3 border rounded-lg"
           required
+          disabled={isLoading}
         />
       </div>
       
@@ -123,6 +142,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           onChange={(e) => setFormData({...formData, password: e.target.value})}
           className="w-full p-3 border rounded-lg"
           required
+          disabled={isLoading}
         />
       </div>
       
@@ -137,6 +157,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
           className="w-full p-3 border rounded-lg"
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -146,16 +167,27 @@ const handleSubmit = async (e: React.FormEvent) => {
       
       <button 
         type="submit"
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+        disabled={isLoading}
+        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
       >
-        <UserPlus className="w-5 h-5 mr-2" />
-        Zarejestruj się
+        {isLoading ? (
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+            <span>Rejestracja...</span>
+          </div>
+        ) : (
+          <>
+            <UserPlus className="w-5 h-5 mr-2" />
+            Zarejestruj się
+          </>
+        )}
       </button>
       
       <button
         type="button"
         onClick={onBackToLogin}
-        className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors"
+        disabled={isLoading}
+        className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors disabled:bg-gray-100"
       >
         Wróć do logowania
       </button>

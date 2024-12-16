@@ -76,7 +76,7 @@ const verifySetup = async () => {
     try {
       await updateDoc(userDoc, {
         stripeOnboardingStatus: STRIPE_ONBOARDING_STATUS.COMPLETED,
-        stripeOnboardingTimestamp: new Date().toISOString()
+        updatedAt: new Date().toISOString()
       });
       console.log('Firebase update successful');
     } catch (error) {

@@ -10,19 +10,20 @@ export default function LoginButton() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
+    
     try {
       console.log('Próba logowania dla:', email);
       await login(email, password);
       console.log('Logowanie udane - przekierowuję...');
-      setTimeout(() => {
-        router.push('/dashboard/waiter');
-      }, 100);
+      router.push('/dashboard/waiter');
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
       if (err instanceof FirebaseError) {
@@ -43,6 +44,8 @@ export default function LoginButton() {
       } else {
         setError('Wystąpił nieoczekiwany błąd');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,6 +62,7 @@ export default function LoginButton() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full p-3 border rounded-lg"
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -73,6 +77,7 @@ export default function LoginButton() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full p-3 border rounded-lg"
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -82,10 +87,20 @@ export default function LoginButton() {
       
       <button 
         type="submit"
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+        disabled={isLoading}
+        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
       >
-        <LogIn className="w-5 h-5 mr-2" />
-        Zaloguj się
+        {isLoading ? (
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+            <span>Logowanie...</span>
+          </div>
+        ) : (
+          <>
+            <LogIn className="w-5 h-5 mr-2" />
+            Zaloguj się
+          </>
+        )}
       </button>
     </form>
   );

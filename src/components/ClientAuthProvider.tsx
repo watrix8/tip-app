@@ -2,9 +2,9 @@
 
 import { useAuth } from '@/lib/contexts/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-const PUBLIC_PATHS = ['/', '/login', '/register'];
+const PUBLIC_PATHS = ['/', '/login'];
 
 export default function ClientAuthProvider({
   children,
@@ -14,6 +14,7 @@ export default function ClientAuthProvider({
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -22,10 +23,11 @@ export default function ClientAuthProvider({
       } else if (user && PUBLIC_PATHS.includes(pathname)) {
         router.push('/dashboard/waiter');
       }
+      setIsReady(true);
     }
   }, [loading, user, router, pathname]);
 
-  if (loading) {
+  if (loading || !isReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
