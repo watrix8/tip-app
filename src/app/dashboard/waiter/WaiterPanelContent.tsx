@@ -21,6 +21,8 @@ export default function WaiterPanelContent() {
   const [hasStripeAccount, setHasStripeAccount] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isStripeConfigLoading, setIsStripeConfigLoading] = useState(false);
+  const [isStripeLoginLoading, setIsStripeLoginLoading] = useState(false);
+
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -65,6 +67,9 @@ export default function WaiterPanelContent() {
 
   const handleStripeLoginClick = async () => {
     try {
+      setIsStripeLoginLoading(true);
+      setError(null);
+      
       const response = await fetch('/api/stripe', {
         method: 'POST',
         headers: {
@@ -75,14 +80,18 @@ export default function WaiterPanelContent() {
           stripeAccountId: userData?.stripeAccountId
         }),
       });
-
+  
       const data = await response.json();
       if (data.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
+      } else {
+        throw new Error('Nie otrzymano poprawnego URL do logowania');
       }
     } catch (err) {
       console.error('Error getting Stripe login link:', err);
       setError('Nie udało się otworzyć panelu Stripe');
+    } finally {
+      setIsStripeLoginLoading(false);
     }
   };
 
@@ -208,12 +217,22 @@ export default function WaiterPanelContent() {
                       Historia napiwków
                     </h4>
                     <button
-                      onClick={handleStripeLoginClick}
-                      className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                    >
-                      <span className="mr-2">Zobacz historię napiwków</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
+  onClick={handleStripeLoginClick}
+  disabled={isStripeLoginLoading}
+  className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+>
+  {isStripeLoginLoading ? (
+    <>
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+      <span>Ładowanie...</span>
+    </>
+  ) : (
+    <>
+      <span className="mr-2">Zobacz historię napiwków</span>
+      <ExternalLink className="w-4 h-4" />
+    </>
+  )}
+</button>
                   </div>
                 </div>
               </div>
