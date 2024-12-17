@@ -3,6 +3,8 @@ import { getFirestore } from 'firebase/firestore';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import Stripe from 'stripe';
+import { PAYMENT_CONFIG, validateTipAmount, calculateApplicationFee } from '@/lib/config/payment';
+
 
 // Konfiguracja Firebase
 const firebaseConfig = {
@@ -173,53 +175,71 @@ export async function POST(request: Request) {
     }
 
     // Tworzenie intencji płatności
-    if (action === 'create-payment-intent') {
-      try {
-        console.log('Creating payment intent for waiterId:', waiterId);
-        if (!body.amount) {
-          throw new Error('Amount is required');
-        }
+// route.ts - w sekcji gdzie jest "if (action === 'create-payment-intent')"
 
-        const userRef = doc(db, 'Users', waiterId);
-        const userDoc = await getDoc(userRef);
-        
-        if (!userDoc.exists()) {
-          throw new Error('Waiter not found');
-        }
-
-        const userData = userDoc.data();
-        if (!userData.stripeAccountId) {
-          throw new Error('No Stripe account found for waiter');
-        }
-
-        // Sprawdź czy konto jest w pełni skonfigurowane
-        const account = await stripe.accounts.retrieve(userData.stripeAccountId);
-        if (!account.charges_enabled) {
-          throw new Error('Stripe account is not fully set up');
-        }
-
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: body.amount * 100, // Konwersja na grosze
-          currency: 'pln',
-          application_fee_amount: 50, // 50 groszy prowizji
-          transfer_data: {
-            destination: userData.stripeAccountId,
-          },
-        });
-
-        console.log('Payment intent created:', paymentIntent.id);
-        return NextResponse.json({ 
-          clientSecret: paymentIntent.client_secret 
-        });
-      } catch (stripeError) {
-        console.error('Payment intent creation error:', stripeError);
-        const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error occurred';
-        return NextResponse.json(
-          { error: `Failed to create payment intent: ${errorMessage}` },
-          { status: 400 }
-        );
-      }
+if (action === 'create-payment-intent') {
+  try {
+    console.log('Creating payment intent for waiterId:', waiterId);
+    if (!body.amount) {
+      throw new Error('Amount is required');
     }
+
+    // Walidacja kwoty
+    if (!validateTipAmount(body.amount)) {
+      throw new Error(
+        `Kwota musi być między ${PAYMENT_CONFIG.TIPS.MIN_AMOUNT} PLN a ${PAYMENT_CONFIG.TIPS.MAX_AMOUNT} PLN`
+      );
+    }
+
+    const userRef = doc(db, 'Users', waiterId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error('Waiter not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData.stripeAccountId) {
+      throw new Error('No Stripe account found for waiter');
+    }
+
+    // Sprawdź czy konto jest w pełni skonfigurowane
+    const account = await stripe.accounts.retrieve(userData.stripeAccountId);
+    if (!account.charges_enabled) {
+      throw new Error('Stripe account is not fully set up');
+    }
+
+    // Obliczamy prowizję używając nowej funkcji z payment.ts
+    const amountInCents = Math.round(body.amount * 100); // Konwersja na grosze
+    const applicationFee = calculateApplicationFee(body.amount);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'pln',
+      application_fee_amount: applicationFee,
+      transfer_data: {
+        destination: userData.stripeAccountId,
+      },
+    });
+
+    console.log('Payment intent created:', {
+      id: paymentIntent.id,
+      amount: amountInCents,
+      applicationFee: applicationFee
+    });
+
+    return NextResponse.json({ 
+      clientSecret: paymentIntent.client_secret 
+    });
+  } catch (stripeError) {
+    console.error('Payment intent creation error:', stripeError);
+    const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error occurred';
+    return NextResponse.json(
+      { error: `Failed to create payment intent: ${errorMessage}` },
+      { status: 400 }
+    );
+  }
+}
 
     // Generowanie linku logowania
     if (action === 'create-login-link') {

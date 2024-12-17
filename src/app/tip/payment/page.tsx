@@ -11,6 +11,7 @@ import { PaymentForm } from './component/PaymentForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/contexts/auth';
 import UserAvatar from '@/components/UserAvatar';
+import { PAYMENT_CONFIG, validateTipAmount } from '@/lib/config/payment';
 
 const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
 
@@ -96,17 +97,22 @@ const PaymentPageContent = () => {
 
   const handlePayment = async () => {
     console.log('HandlePayment called');
-    console.log('Final amount:', getFinalAmount());
     
     const finalAmount = getFinalAmount();
-    if (!finalAmount || finalAmount <= 0 || !waiter || !termsAccepted) {
-      console.log('Validation failed:', { finalAmount, waiter, termsAccepted });
-      setPaymentError('Proszę wybrać kwotę napiwku i zaakceptować regulamin');
+  
+    if (!validateTipAmount(finalAmount)) {
+      setPaymentError(
+        `Kwota napiwku musi być między ${PAYMENT_CONFIG.TIPS.MIN_AMOUNT} PLN a ${PAYMENT_CONFIG.TIPS.MAX_AMOUNT} PLN`
+      );
       return;
     }
-
+  
+    if (!waiter || !termsAccepted) {
+      setPaymentError('Proszę zaakceptować regulamin');
+      return;
+    }
+  
     try {
-      console.log('Sending request to /api/stripe');
       const response = await fetch('/api/stripe', {
         method: 'POST',
         headers: {
