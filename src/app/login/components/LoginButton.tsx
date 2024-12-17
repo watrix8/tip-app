@@ -22,11 +22,6 @@ export default function LoginButton() {
       await login(email, password);
       console.log('Logowanie udane - przekierowuję...');
       
-      // Używamy bezpośredniego przekierowania zamiast router.push
-      setTimeout(() => {
-        window.location.href = '/dashboard/waiter';
-      }, 500);
-      
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
       if (err instanceof FirebaseError) {

@@ -8,6 +8,22 @@ export function middleware(request: NextRequest) {
   const firebaseCookie = allCookies.find(cookie => 
     cookie.name.startsWith('firebase:authUser:')
   );
+
+    // Sprawdzamy czy cookie jest ważne
+    if (firebaseCookie) {
+      try {
+        const cookieData = JSON.parse(firebaseCookie.value);
+        // Sprawdzamy czy token nie wygasł
+        if (cookieData.stsTokenManager?.expirationTime < Date.now()) {
+          // Token wygasł - usuwamy cookie
+          return NextResponse.redirect(new URL('/login', request.url));
+        }
+      } catch (error) {
+        console.error('Cookie parsing error:', error);
+        // Błąd parsowania - przekierowujemy do logowania
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    }
   
   const path = request.nextUrl.pathname;
   console.log('Middleware detailed check:', {
