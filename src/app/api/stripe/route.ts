@@ -4,7 +4,9 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import Stripe from 'stripe';
 import { PAYMENT_CONFIG, validateTipAmount, calculateApplicationFee } from '@/lib/config/payment';
-
+import { RATE_LIMITS } from '@/lib/config/rate-limits';
+import { rateLimit } from '@/lib/utils/rate-limiter';
+import { headers } from 'next/headers';
 
 // Konfiguracja Firebase
 const firebaseConfig = {
@@ -26,14 +28,46 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 export async function POST(request: Request) {
   try {
+    const headersList = await headers(); // Dodajemy await
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     const body = await request.json();
+    const { action, waiterId, stripeAccountId } = body;
+
     console.log('Received request:', {
-      action: body.action,
-      waiterId: body.waiterId,
-      hasStripeAccountId: !!body.stripeAccountId
+      action: action,
+      waiterId: waiterId,
+      hasStripeAccountId: !!stripeAccountId,
+      ip: ip
     });
 
-    const { action, waiterId, stripeAccountId } = body;
+    // Wybierz odpowiedni limit na podstawie akcji
+    let rateLimitConfig = RATE_LIMITS.DEFAULT;
+    switch (action) {
+      case 'create-payment-intent':
+        rateLimitConfig = RATE_LIMITS.PAYMENT;
+        break;
+      case 'create-connect-account':
+      case 'check-account-status':
+        rateLimitConfig = RATE_LIMITS.STRIPE_ACCOUNT;
+        break;
+    }
+
+    // rateLimitConfig będzie teraz miał poprawne nazwy właściwości
+    const rateLimitResult = await rateLimit(ip, action, rateLimitConfig);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json({
+        error: 'Zbyt wiele prób. Spróbuj ponownie później.',
+        retryAfter: Math.ceil(rateLimitConfig.windowMs / 1000)
+      }, {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil(rateLimitConfig.windowMs / 1000).toString(),
+          'X-RateLimit-Limit': rateLimitConfig.maxRequests.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
+        }
+      });
+    }
 
     // Sprawdź waiterId tylko dla akcji, które go wymagają
     if (action !== 'create-login-link' && !waiterId) {

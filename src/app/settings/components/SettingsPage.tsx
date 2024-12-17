@@ -5,6 +5,8 @@ import AvatarUpload from '@/components/AvatarUpload';
 import type { UserData } from '@/types/user';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/config/firebase';
 
 interface SettingsPageProps {
   currentUser: UserData | null;
@@ -34,10 +36,22 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
       return;
     }
 
+    if (!currentUser?.id) {
+      setSaveError('Błąd: brak ID użytkownika');
+      setIsSaving(false);
+      return;
+    }
+
     try {
-      // Tutaj implementacja zapisu danych
+      const userRef = doc(db, 'Users', currentUser.id);
+      await updateDoc(userRef, {
+        name: formData.name.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      
       setSaveSuccess(true);
-    } catch {
+    } catch (error) {
+      console.error('Błąd podczas zapisywania:', error);
       setSaveError('Wystąpił błąd podczas zapisywania zmian. Spróbuj ponownie później.');
     } finally {
       setIsSaving(false);

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/contexts/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/config/firebase';
 import type { UserData } from '@/types/user';
-import SettingsPage from '@/app/dashboard/components/SettingsPage';
+import SettingsPage from '@/app/settings/components/SettingsPage';
 
 export default function SettingsPageContent() {
   const { user } = useAuth();
@@ -36,7 +36,7 @@ export default function SettingsPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
