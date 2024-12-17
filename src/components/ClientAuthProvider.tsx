@@ -18,6 +18,12 @@ export default function ClientAuthProvider({
 
   useEffect(() => {
     if (!loading) {
+      console.log('Auth state in ClientAuthProvider:', {
+        isAuthenticated: !!user,
+        currentPath: pathname,
+        isPublicPath: PUBLIC_PATHS.includes(pathname)
+      });
+      
       if (!user && !PUBLIC_PATHS.includes(pathname)) {
         router.push('/login');
       } else if (user && PUBLIC_PATHS.includes(pathname)) {

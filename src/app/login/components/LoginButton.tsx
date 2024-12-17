@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth';
 import { FirebaseError } from 'firebase/app';
-import { useRouter } from 'next/navigation';
 
 export default function LoginButton() {
   const [email, setEmail] = useState('');
@@ -12,7 +11,6 @@ export default function LoginButton() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +21,12 @@ export default function LoginButton() {
       console.log('Próba logowania dla:', email);
       await login(email, password);
       console.log('Logowanie udane - przekierowuję...');
-      router.push('/dashboard/waiter');
+      
+      // Używamy bezpośredniego przekierowania zamiast router.push
+      setTimeout(() => {
+        window.location.href = '/dashboard/waiter';
+      }, 500);
+      
     } catch (err) {
       console.error('Szczegóły błędu logowania:', err);
       if (err instanceof FirebaseError) {
