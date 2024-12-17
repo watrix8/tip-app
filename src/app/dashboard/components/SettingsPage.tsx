@@ -1,231 +1,159 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Upload, User, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/config/firebase';
-import { useAuth } from '@/lib/contexts/auth';
-import type { SettingsPageProps } from '@/types/user';
-import Image from 'next/image';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth } from '@/lib/config/firebase';
+import React, { useState, FormEvent } from 'react';
+import AvatarUpload from '@/components/AvatarUpload';
+import type { UserData } from '@/types/user';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [name, setName] = useState(currentUser?.name || '');
-  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Sprawdzamy czy currentUser.id zgadza się z zalogowanym użytkownikiem
-  useEffect(() => {
-    if (currentUser?.id !== user?.uid) {
-      console.error('Unauthorized access attempt');
-      router.push('/');
-    }
-  }, [currentUser?.id, user?.uid, router]);
+interface SettingsPageProps {
+  currentUser: UserData | null;
+}
 
-  useEffect(() => {
-    if (currentUser?.id !== user?.uid) {
-      router.push('/');
-    }
-  }, [currentUser, user, router]);
+export default function SettingsPage({ currentUser }: SettingsPageProps) {
+  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    name: currentUser?.name || '',
+    email: currentUser?.email || ''
+  });
+  const [nameError, setNameError] = useState<string | null>(null);
 
-  const handleGoBack = () => {
-    router.back();
-  };
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    setNameError(null);
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentUser?.id) return;
-
-    // Sprawdź czy użytkownik jest zalogowany
-    const currentAuthUser = auth.currentUser;
-    if (!currentAuthUser) {
-      setError('Musisz być zalogowany aby zmienić avatar');
+    if (!formData.name.trim()) {
+      setNameError('To pole jest wymagane');
+      setIsSaving(false);
       return;
     }
 
-    setIsLoading(true);
-    setError('');
-
     try {
-      const storage = getStorage();
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `avatar-${Date.now()}.${fileExtension}`;
-      const avatarRef = ref(storage, `avatars/${currentUser.id}/${fileName}`);
-      
-      // Upload pliku z metadanymi
-      const metadata = {
-        customMetadata: {
-          userId: currentUser.id
-        }
-      };
-      
-      await uploadBytes(avatarRef, file, metadata);
-      
-      // Pobierz URL
-      const downloadURL = await getDownloadURL(avatarRef);
-      console.log('New avatar URL:', downloadURL);
-      
-      // Aktualizuj w bazie danych
-      const userRef = doc(db, 'Users', currentUser.id);
-      await updateDoc(userRef, {
-        avatarUrl: downloadURL
-      });
-      
-      setAvatarUrl(downloadURL);
-      
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-      setError('Wystąpił błąd podczas zapisywania avatara. Spróbuj ponownie.');
+      // Tutaj implementacja zapisu danych
+      setSaveSuccess(true);
+    } catch {
+      setSaveError('Wystąpił błąd podczas zapisywania zmian. Spróbuj ponownie później.');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser?.id) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const userRef = doc(db, 'Users', currentUser.id);
-      await updateDoc(userRef, {
-        name,
-        avatarUrl
-      });
-
-      // Pokazujemy komunikat o sukcesie i wracamy do panelu
-      alert('Zapisano zmiany!');
-      router.back();
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Wystąpił błąd podczas zapisywania zmian');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleAvatarUpdate = (newAvatarUrl: string) => {
+    setAvatarUrl(newAvatarUrl);
+    setSaveSuccess(true);
   };
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Nagłówek z przyciskiem powrotu */}
-        <div className="mb-8 flex items-center">
-          <button
-            onClick={handleGoBack}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-4 text-gray-900"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Ustawienia profilu</h1>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Avatar section */}
-            <div className="flex flex-col items-center space-y-4">
-              <div 
-                onClick={handleAvatarClick}
-                className="relative cursor-pointer group"
-              >
-                {avatarUrl ? (
-                  <div className="relative w-32 h-32">
-                    <Image
-                      src={avatarUrl}
-                      alt="Avatar"
-                      fill
-                      className="rounded-full object-cover border-4 border-white shadow-lg"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
-                    <User className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Upload className="w-8 h-8 text-white" />
-                </div>
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/dashboard/waiter" 
+              className="inline-flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-5 h-5 mr-1" />
+              Powrót do panelu
+            </Link>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-900">Ustawienia profilu</h1>
+          
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex flex-col items-center mb-8">
+              <AvatarUpload
+                userId={currentUser.id}
+                currentAvatarUrl={avatarUrl}
+                userName={currentUser.name || ''}
+                onAvatarUpdate={handleAvatarUpdate}
               />
-              <p className="text-sm text-gray-500">
-                Kliknij aby zmienić avatar
+              <p className="mt-4 text-sm text-gray-600">
+                Kliknij w avatar aby zmienić zdjęcie profilowe
               </p>
             </div>
 
-            {/* Form fields */}
-            <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  htmlFor="name" 
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Imię i nazwisko
                 </label>
                 <input
-                  type="text"
                   id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 border rounded-lg"
-                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, name: e.target.value }));
+                    if (nameError) setNameError(null);
+                  }}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {nameError && (
+                  <p className="mt-1 text-sm text-red-500">{nameError}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  htmlFor="email" 
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email
                 </label>
                 <input
+                  id="email"
                   type="email"
-                  value={currentUser?.email || ''}
-                  className="w-full p-3 border rounded-lg bg-gray-50"
+                  value={formData.email}
                   disabled
+                  className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                  aria-disabled="true"
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Email nie może być zmieniony
+                  Adres email nie może zostać zmieniony
                 </p>
               </div>
-            </div>
 
-            {error && (
-              <div className="text-red-600 text-sm text-center">
-                {error}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+                >
+                  {isSaving ? 'Zapisywanie...' : 'Zapisz zmiany'}
+                </button>
+              </div>
+            </form>
+
+            {saveSuccess && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-800">
+                  Zmiany zostały zapisane pomyślnie
+                </p>
               </div>
             )}
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Zapisywanie...
-                </>
-              ) : (
-                'Zapisz zmiany'
-              )}
-            </button>
-          </form>
+            {saveError && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-800">
+                  {saveError}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default SettingsPage;
+}

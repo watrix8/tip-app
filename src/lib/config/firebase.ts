@@ -1,8 +1,7 @@
-'use client';
-
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,9 +18,12 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 // Exportuj instancje
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 console.log('Firebase initialized with config:', {
   hasApiKey: !!firebaseConfig.apiKey,
   hasProjectId: !!firebaseConfig.projectId,
-  hasDb: !!db
+  hasStorageBucket: !!firebaseConfig.storageBucket,
+  hasDb: !!db,
+  hasStorage: !!storage
 });
