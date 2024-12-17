@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
     allCookieNames: allCookies.map(c => c.name)
   });
 
-  const publicPaths = ['/login', '/register', '/'];
+  const publicPaths = ['/login', '/register'];
   const protectedPaths = ['/dashboard', '/settings'];
   
   const isPublicPath = publicPaths.includes(path);

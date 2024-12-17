@@ -22,7 +22,7 @@ interface Waiter {
 }
 
 const LoadingState = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+  <div className="flex items-center justify-center bg-gray-50 p-4">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
   </div>
 );
@@ -161,7 +161,7 @@ const PaymentPageContent = () => {
 
   if (!waiter) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
           <h1 className="text-xl font-bold text-red-600 mb-2">
             Błąd ładowania danych
@@ -180,7 +180,7 @@ const PaymentPageContent = () => {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <main className="flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">

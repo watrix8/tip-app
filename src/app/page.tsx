@@ -26,9 +26,9 @@ export default function LandingPage() {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-gray-900" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-6 h-6 text-gray-900" />
             )}
           </button>
 

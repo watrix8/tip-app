@@ -10,7 +10,7 @@ import UserAvatar from '@/components/UserAvatar';
 
 // Loading Component
 const LoadingState = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+  <div className="flex items-center justify-center bg-gray-50 p-4">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
   </div>
 );
@@ -59,7 +59,7 @@ const TipPageContent = () => {
 
   if (error || !waiterData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md text-center">
           <h1 className="text-xl font-bold text-red-600 mb-2">
             Błąd ładowania danych
@@ -75,7 +75,7 @@ const TipPageContent = () => {
   const tipPageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tip/payment?waiterId=${waiterId}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
         <div className="text-center space-y-6">
           <div className="flex justify-center">

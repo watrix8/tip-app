@@ -1,3 +1,4 @@
+// app/layout.tsx
 import './globals.css';
 import { AuthProvider } from '@/lib/contexts/auth';
 import { Inter } from 'next/font/google';
