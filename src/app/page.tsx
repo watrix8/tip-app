@@ -214,7 +214,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 text-center text-sm text-gray-600">
           &copy; {new Date().getFullYear()} tippin&apos;. Wszelkie prawa zastrzeżone.
           <div className="mt-2">
-            <Link href="/regulamin" className="text-gray-500 hover:text-gray-700 hover:underline">
+            <Link href="/regulamin" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 hover:underline">
               Regulamin usługi
             </Link>
           </div>

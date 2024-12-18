@@ -21,7 +21,7 @@ export default function TermsPage() {
             className="flex items-center text-gray-600 hover:text-black"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Powrót
+            Strona główna
           </Link>
         </div>
       </header>

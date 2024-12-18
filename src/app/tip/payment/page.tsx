@@ -268,7 +268,7 @@ const PaymentPageContent = () => {
                   className="mt-1 rounded border-gray-300"
                 />
                 <span>
-                  Akceptuję <a href="/regulamin" target="_blank" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz 
+                  Akceptuję <a href="/regulamin" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">regulamin serwisu</a> oraz 
                   wyrażam zgodę na przetwarzanie moich danych osobowych w celu realizacji usługi
                 </span>
               </label>
