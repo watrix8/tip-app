@@ -15,7 +15,7 @@ import { auth } from '@/lib/config/firebase';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<UserCredential>;  // Zmiana typu
+  login: (email: string, password: string) => Promise<UserCredential>;
   signOut: () => Promise<void>;
 }
 
@@ -26,26 +26,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const setupAuth = async () => {
-      await setPersistence(auth, browserLocalPersistence);
-      
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        console.log('Auth state changed:', firebaseUser?.email);
-        setUser(firebaseUser);
-        setLoading(false);
-      });
+    let unsubscribed = false;
 
-      return () => unsubscribe();
+    const setupAuth = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          if (unsubscribed) return;
+
+          console.log('Auth state changed:', {
+            email: firebaseUser?.email,
+            timestamp: new Date().toISOString()
+          });
+          
+          setUser(firebaseUser);
+          setLoading(false);
+        });
+
+        return () => {
+          unsubscribed = true;
+          unsubscribe();
+        };
+      } catch (error) {
+        console.error('Auth setup error:', error);
+        if (!unsubscribed) {
+          setLoading(false);
+        }
+      }
     };
 
     setupAuth();
-  }, []);
 
+    // Zabezpieczenie przed długim ładowaniem
+    const timeoutId = setTimeout(() => {
+      if (!unsubscribed && loading) {
+        console.warn('Auth initialization timeout');
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => {
+      unsubscribed = true;
+      clearTimeout(timeoutId);
+    };
+  }, []);
+  
   const login = async (email: string, password: string): Promise<UserCredential> => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Ustawiamy ciasteczko z prawidłową ścieżką i odpowiednim czasem życia
       const sessionCookie = `firebase:authUser:${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}:web`;
       document.cookie = `${sessionCookie}=${JSON.stringify(userCredential.user)}; path=/; max-age=7200; SameSite=Strict`;
       
@@ -58,14 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Najpierw czyścimy wszystkie dane w localStorage
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('firebase:') || key.startsWith('tip-app:')) {
           localStorage.removeItem(key);
         }
       });
       
-      // Czyścimy wszystkie ciasteczka związane z aplikacją
       document.cookie.split(';').forEach(cookie => {
         const [name] = cookie.split('=');
         const trimmedName = name.trim();
@@ -75,10 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // Wylogowanie z Firebase
       await firebaseSignOut(auth);
 
-      // Czekamy na potwierdzenie wylogowania
       await new Promise<void>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           if (!user) {
@@ -88,14 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       });
 
-      // Przekierowanie na stronę logowania
       window.location.href = '/login';
       
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       throw error;
     }
-};
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signOut }}>
