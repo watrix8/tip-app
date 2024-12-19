@@ -6,7 +6,7 @@ export const RATE_LIMITS = {
     },
     STRIPE_ACCOUNT: {
       windowMs: 60 * 60 * 1000, // 1 godzina
-      maxRequests: 5, // max 5 prób utworzenia/aktualizacji konta na godzinę
+      maxRequests: 50, // max 5 prób utworzenia/aktualizacji konta na godzinę
     },
     DEFAULT: {
       windowMs: 60 * 1000, // 1 minuta
