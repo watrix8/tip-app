@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/contexts/auth';
 import UserAvatar from '@/components/UserAvatar';
 import { PAYMENT_CONFIG, validateTipAmount } from '@/lib/config/payment';
 
-const stripePromise = loadStripe('pk_test_51QVeM9I7OiRMQyLiFAN2PaVRQYZZRt5mYcGvABCW9flDoFRdClm96PXK9EjJDpphNxKSmHZGLVyyIJoOdKiviMvN00VCb0Mvwq');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 interface Waiter {
   name: string;
