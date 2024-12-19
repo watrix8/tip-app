@@ -6,8 +6,6 @@ import { FirebaseError } from 'firebase/app';
 import { auth } from '@/lib/config/firebase';
 import { createOrUpdateUser } from '@/lib/utils/firebase';
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import Link from 'next/link';
-
 
 interface RegisterFormProps {
  onBackToLogin: () => void;
@@ -23,16 +21,10 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
  });
  const [error, setError] = useState('');
  const [isLoading, setIsLoading] = useState(false);
- const [termsAccepted, setTermsAccepted] = useState(false);
 
  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   
-  if (!termsAccepted) {
-    setError('Musisz zaakceptować regulamin serwisu');
-    return;
-  }
-
   if (formData.password !== formData.confirmPassword) {
     setError('Hasła się nie zgadzają');
     return;
@@ -180,34 +172,6 @@ export default function RegisterForm({ onBackToLogin }: RegisterFormProps) {
            disabled={isLoading}
          />
        </div>
-
-       <div className="flex items-start">
-  <div className="flex items-center h-5">
-    <input
-      id="terms"
-      type="checkbox"
-      checked={termsAccepted}
-      onChange={(e) => setTermsAccepted(e.target.checked)}
-      className="w-4 h-4 border-gray-300 rounded focus:ring-blue-500"
-      required
-    />
-  </div>
-
-  <div className="ml-3">
-    <label htmlFor="terms" className="text-sm text-gray-600">
-      Akceptuję{' '}
-      <Link
-        href="/regulamin"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:underline"
-      >
-        regulamin serwisu
-      </Link>
-      {' '}oraz wyrażam zgodę na przetwarzanie moich danych osobowych
-    </label>
-  </div>
-</div>
 
        {error && (
          <p className="text-red-500 text-sm text-center">{error}</p>
